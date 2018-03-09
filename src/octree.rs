@@ -7,10 +7,10 @@ use get_positions_from_xyzfile;
 // 7711fb40-175f-4198-bff1-71c5fe1d7bd3 ends here
 
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::d602663f-9f66-4e18-a538-e60b12985df3][d602663f-9f66-4e18-a538-e60b12985df3]]
-#[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug, Hash, Default)]
 pub struct OctantId (usize);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 /// A node within a particular octree
 pub struct Octant {
     // tree attributes
@@ -19,19 +19,17 @@ pub struct Octant {
 
     /// The actual data which will be stored within the tree
     center: [f64; 3],
+    /// The extent of cube (radius)
     extent: f64,
-    ipoints: Vec<usize>,     // indices of the points in a public array
+    /// indices of the points in a public array
+    ipoints: Vec<usize>,
 }
 
 impl Octant {
     fn new(extent: f64) -> Self {
         Octant {
-            parent: None,
-            children: Vec::new(),
-
-            center: [0.0; 3],
             extent: extent,
-            ipoints: vec![],
+            ..Default::default()
         }
     }
 
@@ -99,6 +97,20 @@ pub struct Octree {
     pub root    : OctantId,
 }
 
+impl Default for Octree {
+    fn default() -> Self {
+        Octree {
+            bucket_size : 8,
+            min_extent  : 2.0,
+            max_depth   : 9,
+
+            points      : Default::default(),
+            octants     : Default::default(),
+            root        : Default::default(),
+        }
+    }
+}
+
 impl Octree {
     /// initialize octree from points in 3D space
     pub fn new(points: Vec<[f64; 3]>) -> Self {
@@ -107,13 +119,11 @@ impl Octree {
         let root = OctantId(0);
 
         Octree {
-            bucket_size : 3,
-            min_extent  : 2.0,
-            max_depth   : 9,
+            points    : points,
+            octants   : octants,
+            root      : root,
 
-            points: points,
-            octants: octants,
-            root: root,
+            ..Default ::default()
         }
     }
 
