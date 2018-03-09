@@ -13,6 +13,8 @@ use std::io::prelude::*;
 use std::fs::File;
 
 pub mod octree;
+
+pub use octree::Octree;
 // ca2234bb-c5da-477d-8a3b-d85edc46ddf1 ends here
 
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::ddd95be2-3bf5-4478-a21b-ea0c8742f5cb][ddd95be2-3bf5-4478-a21b-ea0c8742f5cb]]

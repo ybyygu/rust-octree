@@ -92,11 +92,11 @@ pub struct Octree {
     pub max_depth   : usize,
 
     /// reference points in 3D space
-    points  : Vec<[f64; 3]>,
+    pub points  : Vec<[f64; 3]>,
     /// private data storing all octants in octree
-    octants : Vec<Octant>,
+    pub octants : Vec<Octant>,
     /// root octant index to Octree.octans
-    root    : OctantId,
+    pub root    : OctantId,
 }
 
 impl Octree {
@@ -594,37 +594,3 @@ impl Octree {
     }
 }
 // bbcfff81-6ec6-4e9e-a787-8641691e6435 ends here
-
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::feb2e7b9-8cca-4210-a89d-a7f1d2a40d9e][feb2e7b9-8cca-4210-a89d-a7f1d2a40d9e]]
-#[test]
-fn test_octree() {
-    let points = get_positions_from_xyz_stream(&XYZ_TXT).unwrap();
-    let q = points[0];
-    let mut octree = Octree::new(points);
-    octree.bucket_size = 1;
-    octree.build();
-    let x = octree.neighbors(q, 2.2);
-    println!("neighbors: {:?}", x);
-
-    // large xyz file
-    let xyzfile = "/home/ybyygu/Workspace/Programming/chem-utils/data/51/226f67-055e-42a6-a88d-771f78d7d48e/pdb4rhv.xyz";
-    let points = get_positions_from_xyzfile(xyzfile).unwrap();
-
-    let q = points[0];
-    let mut octree = Octree::new(points);
-    octree.bucket_size = 8*8;
-    octree.build();
-
-    let x = octree.neighbors(q, 3.0);
-    assert!(x.contains(&0));
-    assert!(x.contains(&1241));
-
-    println!("neighbors: {:?}", x);
-
-    timeit!({
-        for &q in octree.points.iter() {
-            octree.neighbors(q, 3.0);
-        }
-    });
-}
-// feb2e7b9-8cca-4210-a89d-a7f1d2a40d9e ends here
