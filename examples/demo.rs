@@ -15,7 +15,7 @@ fn main() {
     tree.bucket_size = 8*8;
     tree.build();
 
-    let x = tree.neighbors(q, 3.0);
+    let x = tree.search(q, 3.0);
     assert!(x.contains(&0));
     assert!(x.contains(&1241));
 
@@ -23,7 +23,7 @@ fn main() {
 
     timeit!({
         for &q in tree.points.iter() {
-            tree.neighbors(q, 3.0);
+            tree.search(q, 3.0);
         }
     });
 }

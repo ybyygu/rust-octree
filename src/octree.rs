@@ -531,11 +531,11 @@ fn test_octree_split_children() {
 
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::bbcfff81-6ec6-4e9e-a787-8641691e6435][bbcfff81-6ec6-4e9e-a787-8641691e6435]]
 impl Octree {
-    /// Query nearest neighbors
+    /// Search nearby points within radius of center.
     /// Return
     /// ------
-    /// indices of neighboring points
-    pub fn neighbors(&self, p: [f64; 3], radius: f64) -> Vec<usize> {
+    /// indices of nearby points
+    pub fn search(&self, p: [f64; 3], radius: f64) -> Vec<usize> {
 
         let mut query = Query::new(radius);
         query.center = p;
@@ -604,3 +604,22 @@ impl Octree {
     }
 }
 // bbcfff81-6ec6-4e9e-a787-8641691e6435 ends here
+
+// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::7e3b12c9-d3f8-4bfc-8ed0-46e2644660d3][7e3b12c9-d3f8-4bfc-8ed0-46e2644660d3]]
+impl Octree {
+    /// Find neighboring points
+    ///
+    /// Parameters
+    /// ----------
+    /// index: index of the center in points array
+    /// radius: the searching radius
+    ///
+    /// Return
+    /// ------
+    /// indices of neighboring points
+    ///
+    pub fn neighbors(&self, index: usize) -> Vec<usize>{
+        vec![0]
+    }
+}
+// 7e3b12c9-d3f8-4bfc-8ed0-46e2644660d3 ends here
