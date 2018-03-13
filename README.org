@@ -1,0 +1,13 @@
+#+TITLE: Octree for nearest neighbor search in 3D space
+#+SETUPFILE: ~/Notes/common.org
+
+This is my first crate.
+
+* Related crates
+- [[https://github.com/dorsath/octree][dorsath/octree: An octree implementation in rust]]
+- [[https://github.com/Nercury/octree-rs][Nercury/octree-rs: Bounded octree structure]]
+
+* References
+- Behley, J.; Steinhage, V.; Cremers, A. B. Efficient Radius Neighbor Search in
+  Three-Dimensional Point Clouds. In 2015 IEEE International Conference on
+  Robotics and Automation (ICRA); 2015; pp 3625–3630.
