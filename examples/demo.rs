@@ -11,7 +11,7 @@ fn main() {
     let points = get_positions_from_xyz_stream(stream).unwrap();
 
     let q = points[0];
-    let mut tree = Octree::new(points);
+    let mut tree = Octree::new(&points);
     tree.bucket_size = 8*8;
     tree.build();
 

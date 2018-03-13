@@ -82,7 +82,7 @@ impl Octant {
 use std::ops::{Index, IndexMut};
 
 #[derive(Clone, Debug)]
-pub struct Octree {
+pub struct Octree<'a> {
     /// adjustable parameter for min number points of octant while building octree
     pub bucket_size : usize,
     /// adjustable paramter for min octant extent while building octree
@@ -91,30 +91,31 @@ pub struct Octree {
     pub max_depth   : usize,
 
     /// reference points in 3D space
-    pub points  : Points,
+    pub points  : &'a Points,
     /// private data storing all octants in octree
     pub octants : Vec<Octant>,
     /// root octant index to Octree.octans
     pub root    : OctantId,
 }
 
-impl Default for Octree {
-    fn default() -> Self {
-        Octree {
-            bucket_size : 8,
-            min_extent  : 2.0,
-            max_depth   : 9,
+// impl<'a> Default for Octree<'a> {
+//     fn default() -> Self {
+//         let ps: &'a Points = &Vec::new();
+//         Octree {
+//             bucket_size : 8,
+//             min_extent  : 2.0,
+//             max_depth   : 9,
 
-            points      : Default::default(),
-            octants     : Default::default(),
-            root        : Default::default(),
-        }
-    }
-}
+//             points      : ps ,
+//             octants     : Default::default(),
+//             root        : Default::default(),
+//         }
+//     }
+// }
 
-impl Octree {
+impl<'a> Octree<'a> {
     /// initialize octree from points in 3D space
-    pub fn new(points: Points) -> Self {
+    pub fn new(points: &'a Points) -> Self {
         let octant = Octant::from_points(&points);
         let octants = vec![octant];
         let root = OctantId(0);
@@ -124,7 +125,9 @@ impl Octree {
             octants   : octants,
             root      : root,
 
-            ..Default ::default()
+            bucket_size : 8,
+            min_extent  : 2.0,
+            max_depth   : 9,
         }
     }
 
@@ -143,7 +146,7 @@ impl Octree {
     }
 }
 
-impl Index<OctantId> for Octree {
+impl<'a> Index<OctantId> for Octree<'a> {
     type Output = Octant;
 
     fn index(&self, node: OctantId) -> &Octant {
@@ -151,7 +154,7 @@ impl Index<OctantId> for Octree {
     }
 }
 
-impl IndexMut<OctantId> for Octree {
+impl<'a> IndexMut<OctantId> for Octree<'a> {
     fn index_mut(&mut self, node: OctantId) -> &mut Octant {
         &mut self.octants[node.0]
     }
@@ -273,7 +276,7 @@ fn test_octree_init() {
 // 85a1bbdb-53b6-4dff-89e2-1ceba40b3c02 ends here
 
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::90433ce9-a63e-4f8e-b497-6cdd3bb88ca8][90433ce9-a63e-4f8e-b497-6cdd3bb88ca8]]
-impl Octree {
+impl<'a> Octree<'a> {
     /// private orphon node, return OctantId for further operation
     fn new_node(&mut self, octant: Octant) -> OctantId {
         let next_index = self.octants.len();
@@ -418,7 +421,7 @@ fn test_octree_factor() {
 // 89da6ad4-0055-4246-84c7-9d19194c5405 ends here
 
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::9db18239-7b01-48a3-aedc-7bcc082e7949][9db18239-7b01-48a3-aedc-7bcc082e7949]]
-impl Octree {
+impl<'a> Octree<'a> {
     /// build octree by recursively creating all octants
     pub fn build(&mut self) {
         let root = self.root();
@@ -465,7 +468,7 @@ impl Octree {
 #[test]
 fn test_octree_struct() {
     let points = get_positions_from_xyz_stream(&XYZ_TXT).unwrap();
-    let mut octree = Octree::new(points);
+    let mut octree = Octree::new(&points);
 
     // test octree
     let root = octree.root();
@@ -493,7 +496,7 @@ fn test_octree_struct() {
 #[test]
 fn test_octree_split_children() {
     let points = get_positions_from_xyz_stream(&XYZ_TXT).unwrap();
-    let mut octree = Octree::new(points);
+    let mut octree = Octree::new(&points);
     let root = octree.root();
     octree.split_octant(root);
 
@@ -531,7 +534,7 @@ fn test_octree_split_children() {
 // ea2c2276-5aaa-406e-9d5f-11a258f38cc0 ends here
 
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::bbcfff81-6ec6-4e9e-a787-8641691e6435][bbcfff81-6ec6-4e9e-a787-8641691e6435]]
-impl Octree {
+impl<'a> Octree<'a> {
     /// Search nearby points within radius of center.
     /// Return
     /// ------
@@ -607,7 +610,7 @@ impl Octree {
 // bbcfff81-6ec6-4e9e-a787-8641691e6435 ends here
 
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::7e3b12c9-d3f8-4bfc-8ed0-46e2644660d3][7e3b12c9-d3f8-4bfc-8ed0-46e2644660d3]]
-impl Octree {
+impl<'a> Octree<'a> {
     /// Find neighboring points
     ///
     /// Parameters

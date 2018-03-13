@@ -12,11 +12,10 @@ fn test_octree() {
     let stream = include_str!("data/test.xyz");
     let points = get_positions_from_xyz_stream(stream).unwrap();
     let q = points[0];
-    let mut tree = Octree::new(points);
+    let mut tree = Octree::new(&points);
     tree.bucket_size = 1;
     tree.build();
     let x = tree.search(q, 2.2);
     println!("neighbors: {:?}", x);
-
 }
 // feb2e7b9-8cca-4210-a89d-a7f1d2a40d9e ends here
