@@ -1,9 +1,10 @@
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::7711fb40-175f-4198-bff1-71c5fe1d7bd3][7711fb40-175f-4198-bff1-71c5fe1d7bd3]]
-use std::error::Error;
 use std::collections::HashMap;
 
 use get_positions_from_xyz_stream;
 use get_positions_from_xyzfile;
+use Point;
+use Points;
 // 7711fb40-175f-4198-bff1-71c5fe1d7bd3 ends here
 
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::d602663f-9f66-4e18-a538-e60b12985df3][d602663f-9f66-4e18-a538-e60b12985df3]]
@@ -18,7 +19,7 @@ pub struct Octant {
     children: Vec<OctantId>,
 
     /// The actual data which will be stored within the tree
-    center: [f64; 3],
+    center: Point,
     /// The extent of cube (radius)
     extent: f64,
     /// indices of the points in a public array
@@ -34,7 +35,7 @@ impl Octant {
     }
 
     /// initialize octant struct from point cloud
-    fn from_points(points: &Vec<[f64; 3]>) -> Self {
+    fn from_points(points: &Points) -> Self {
         let mut p_min = points[0];
         let mut p_max = points[0];
 
@@ -90,7 +91,7 @@ pub struct Octree {
     pub max_depth   : usize,
 
     /// reference points in 3D space
-    pub points  : Vec<[f64; 3]>,
+    pub points  : Points,
     /// private data storing all octants in octree
     pub octants : Vec<Octant>,
     /// root octant index to Octree.octans
@@ -113,7 +114,7 @@ impl Default for Octree {
 
 impl Octree {
     /// initialize octree from points in 3D space
-    pub fn new(points: Vec<[f64; 3]>) -> Self {
+    pub fn new(points: Points) -> Self {
         let octant = Octant::from_points(&points);
         let octants = vec![octant];
         let root = OctantId(0);
@@ -160,7 +161,7 @@ impl IndexMut<OctantId> for Octree {
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::68bdbfaf-0d07-40c4-a77c-5c6b43ab440e][68bdbfaf-0d07-40c4-a77c-5c6b43ab440e]]
 #[derive(Debug)]
 pub struct Query {
-    center : [f64; 3],
+    center : Point,
     radius : f64,
 }
 
@@ -306,7 +307,7 @@ impl Octree {
 
 /// octant: octree node data
 /// points: reference points in 3D space
-fn octree_create_child_octants(octant: &Octant, points: &Vec<[f64; 3]>) -> Vec<Octant> {
+fn octree_create_child_octants(octant: &Octant, points: &Points) -> Vec<Octant> {
     let extent = octant.extent / 2.;
 
     let mut octants = vec![];
@@ -379,7 +380,7 @@ fn test_octree_cell_index() {
 
 // useful for calculate center of child octant
 // morton decode
-fn get_octant_cell_factor(index: usize) -> [f64; 3] {
+fn get_octant_cell_factor(index: usize) -> Point {
     debug_assert!(index < 8 && index >= 0);
     [
         match (index & 0b001) == 0 {
@@ -535,7 +536,7 @@ impl Octree {
     /// Return
     /// ------
     /// indices of nearby points
-    pub fn search(&self, p: [f64; 3], radius: f64) -> Vec<usize> {
+    pub fn search(&self, p: Point, radius: f64) -> Vec<usize> {
 
         let mut query = Query::new(radius);
         query.center = p;
