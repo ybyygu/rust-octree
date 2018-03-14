@@ -213,7 +213,7 @@ impl Query {
         nx*nx + ny*ny + nz*nz < self.radius*self.radius
     }
 
-    /// test if if the octant is completely contained by the query ball
+    /// test if the octant is completely contained by the query ball
     fn contains(&self, octant: &Octant) -> bool {
         let extent = octant.extent;
         let x = (self.center[0] - octant.center[0]).abs() + extent;
@@ -221,6 +221,27 @@ impl Query {
         let z = (self.center[2] - octant.center[2]).abs() + extent;
 
         x*x + y*y + z*z < self.radius*self.radius
+    }
+
+    /// test if query ball is completely inside the octant
+    fn inside(&self, octant: &Octant) -> bool {
+        let x = (self.center[0] - octant.center[0]).abs();
+        let y = (self.center[1] - octant.center[1]).abs();
+        let z = (self.center[2] - octant.center[2]).abs();
+
+        if self.radius > octant.extent {
+            return false;
+        }
+
+        for &v in [x, y, z].iter() {
+            if (v > octant.extent) {
+                return false;
+            } else if (v + self.radius > octant.extent) {
+                return false;
+            }
+        }
+
+        true
     }
 }
 // 68bdbfaf-0d07-40c4-a77c-5c6b43ab440e ends here
