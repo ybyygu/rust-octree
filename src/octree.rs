@@ -78,6 +78,136 @@ impl Octant {
 }
 // d602663f-9f66-4e18-a538-e60b12985df3 ends here
 
+// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::68bdbfaf-0d07-40c4-a77c-5c6b43ab440e][68bdbfaf-0d07-40c4-a77c-5c6b43ab440e]]
+#[derive(Debug)]
+pub struct Query {
+    center : Point,
+    radius : f64,
+}
+
+/// Four possible relations of a query ball with an octant
+#[derive(Debug, PartialEq)]
+enum QORelations {
+    /// the query ball has no common space with the octant
+    Disjoint,
+    /// the query ball is partially overlapping with the octant
+    Overlaps,
+    /// the query ball completely contains the octant
+    Contains,
+    /// the query ball is completely within the octant
+    Within,
+}
+
+impl Query {
+    pub fn new(r: f64) -> Self {
+        Query {
+            center : [0.0; 3],
+            radius : r,
+        }
+    }
+
+    /// get the relation of query ball with octant
+    fn relation(&self, octant: &Octant) -> QORelations {
+        let x = (self.center[0] - octant.center[0]).abs();
+        let y = (self.center[1] - octant.center[1]).abs();
+        let z = (self.center[2] - octant.center[2]).abs();
+
+        // 1. cheap case: xyz > e+r
+        let max_dist = octant.extent + self.radius;
+        if (x > max_dist && y > max_dist && z > max_dist) {
+            return QORelations::Disjoint;
+        }
+
+        // 2. overlaps or not
+        if (x < octant.extent || y < octant.extent || z < octant.extent) {
+            // expected to be common: e >= r
+            // expected to be rare  : e < r
+            if octant.extent >= self.radius {
+                // 2.1 Within
+                // cheap case: xyz < e-r < e+r
+                let min_dist = octant.extent - self.radius;
+                if (x <= min_dist && y <= min_dist && z <= min_dist) {
+                    return QORelations::Within;
+                }
+            } else {
+                if (x <= octant.extent && y <= octant.extent && z <= octant.extent) {
+                    // distance to the farthest corner point
+                    let r_sqr = self.radius*self.radius;
+                    let e = octant.extent;
+                    let d_sqr = (x+e)*(x+e) + (y+e)*(y+e) + (z+e)*(z+e);
+                    // 2.2 Contains
+                    if d_sqr <= r_sqr {
+                        return QORelations::Contains;
+                    }
+                }
+            }
+            // cheap case: e < x < e+r || e < y < e+r || z < e < e+r
+            return QORelations::Overlaps;
+        }
+
+        // 3. corner case: Disjoint or Overlaps?
+        // FIXME: can we just assume "Overlaps" to improve efficiency?
+        // expensive case: e < xyz < e+r
+        // distance to the nearest corner point
+        let r_sqr = self.radius*self.radius;
+        let e = octant.extent;
+        let d_sqr = (x-e)*(x-e) + (y-e)*(y-e) + (z-e)*(z-e);
+        if d_sqr > r_sqr {
+            return QORelations::Disjoint;
+        }
+
+        QORelations::Overlaps
+    }
+
+    /// test if there is any overlapping between query ball and the octant
+    fn overlaps(&self, octant: &Octant) -> bool {
+        let x = (self.center[0] - octant.center[0]).abs();
+        let y = (self.center[1] - octant.center[1]).abs();
+        let z = (self.center[2] - octant.center[2]).abs();
+
+        let extent = octant.extent;
+        let max_dist = extent + self.radius;
+
+        // case 1: > e+r
+        if (x > max_dist || y > max_dist || z > max_dist) {
+            // println!("{:?}", "case 1");
+            return false;
+        }
+
+        // case 2: < e
+        if (x < extent || y < extent || z < extent) {
+            // println!("{:?}", "case 2");
+            return true;
+        }
+
+        // case 3: between e and e+r
+        // easy return, which will will minor improvement
+        // return true;
+
+        let nx = x - extent;
+        let ny = y - extent;
+        let nz = z - extent;
+
+        assert!(nx > 0., nx);
+        assert!(ny > 0., ny);
+        assert!(nz > 0., nz);
+
+        // println!("d = {:?}", nx*nx+ny*ny+nz*nz);
+        nx*nx + ny*ny + nz*nz < self.radius*self.radius
+    }
+
+    /// test if the octant is completely contained by the query ball
+    fn contains(&self, octant: &Octant) -> bool {
+        let extent = octant.extent;
+        let x = (self.center[0] - octant.center[0]).abs() + extent;
+        let y = (self.center[1] - octant.center[1]).abs() + extent;
+        let z = (self.center[2] - octant.center[2]).abs() + extent;
+
+        x*x + y*y + z*z < self.radius*self.radius
+    }
+}
+// 68bdbfaf-0d07-40c4-a77c-5c6b43ab440e ends here
+
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::15e377a2-f1f4-483a-a91b-5ddf7f335cb0][15e377a2-f1f4-483a-a91b-5ddf7f335cb0]]
 use std::ops::{Index, IndexMut};
 
@@ -97,21 +227,6 @@ pub struct Octree<'a> {
     /// root octant index to Octree.octans
     pub root    : OctantId,
 }
-
-// impl<'a> Default for Octree<'a> {
-//     fn default() -> Self {
-//         let ps: &'a Points = &Vec::new();
-//         Octree {
-//             bucket_size : 8,
-//             min_extent  : 2.0,
-//             max_depth   : 9,
-
-//             points      : ps ,
-//             octants     : Default::default(),
-//             root        : Default::default(),
-//         }
-//     }
-// }
 
 impl<'a> Octree<'a> {
     /// initialize octree from points in 3D space
@@ -161,113 +276,31 @@ impl<'a> IndexMut<OctantId> for Octree<'a> {
 }
 // 15e377a2-f1f4-483a-a91b-5ddf7f335cb0 ends here
 
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::68bdbfaf-0d07-40c4-a77c-5c6b43ab440e][68bdbfaf-0d07-40c4-a77c-5c6b43ab440e]]
-#[derive(Debug)]
-pub struct Query {
-    center : Point,
-    radius : f64,
-}
-
-impl Query {
-    pub fn new(r: f64) -> Self {
-        Query {
-            center : [0.0; 3],
-            radius : r,
-        }
-    }
-
-    /// test if there is overlapping between query ball and the octant
-    fn overlaps(&self, octant: &Octant) -> bool {
-        let x = (self.center[0] - octant.center[0]).abs();
-        let y = (self.center[1] - octant.center[1]).abs();
-        let z = (self.center[2] - octant.center[2]).abs();
-
-        let extent = octant.extent;
-        let max_dist = extent + self.radius;
-
-        // case 1: > e+r
-        if (x > max_dist || y > max_dist || z > max_dist) {
-            // println!("{:?}", "case 1");
-            return false;
-        }
-
-        // case 2: < e
-        if (x < extent || y < extent || z < extent) {
-            // println!("{:?}", "case 2");
-            return true;
-        }
-
-        // case 3: between e and e+r
-        // easy return, which will will minor improvement
-        // return true;
-
-        let nx = x - extent;
-        let ny = y - extent;
-        let nz = z - extent;
-
-        assert!(nx > 0., nx);
-        assert!(ny > 0., ny);
-        assert!(nz > 0., nz);
-
-        // println!("d = {:?}", nx*nx+ny*ny+nz*nz);
-        nx*nx + ny*ny + nz*nz < self.radius*self.radius
-    }
-
-    /// test if the octant is completely contained by the query ball
-    fn contains(&self, octant: &Octant) -> bool {
-        let extent = octant.extent;
-        let x = (self.center[0] - octant.center[0]).abs() + extent;
-        let y = (self.center[1] - octant.center[1]).abs() + extent;
-        let z = (self.center[2] - octant.center[2]).abs() + extent;
-
-        x*x + y*y + z*z < self.radius*self.radius
-    }
-
-    /// test if query ball is completely inside the octant
-    fn inside(&self, octant: &Octant) -> bool {
-        let x = (self.center[0] - octant.center[0]).abs();
-        let y = (self.center[1] - octant.center[1]).abs();
-        let z = (self.center[2] - octant.center[2]).abs();
-
-        if self.radius > octant.extent {
-            return false;
-        }
-
-        for &v in [x, y, z].iter() {
-            if (v > octant.extent) {
-                return false;
-            } else if (v + self.radius > octant.extent) {
-                return false;
-            }
-        }
-
-        true
-    }
-}
-// 68bdbfaf-0d07-40c4-a77c-5c6b43ab440e ends here
-
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::81167b8a-bac9-4a8e-a6c9-56e48dcd6e79][81167b8a-bac9-4a8e-a6c9-56e48dcd6e79]]
 #[test]
-fn test_octree_overlap() {
+fn test_octree_query_relations() {
+    let octant = Octant::new(2.5);
+    let mut query = Query::new(1.4);
+    let r = query.relation(&octant);
+    assert_eq!(r, QORelations::Within);
+
+    query.radius = 4.4;         // 2.5*sqrt(3)
+    let r = query.relation(&octant);
+    assert_eq!(r, QORelations::Contains);
+
     let octant = Octant::new(2.5);
     let mut query = Query::new(0.4);
     query.center = [2.7, 2.7, 2.7];
-    assert!(query.overlaps(&octant));
+    let r = query.relation(&octant);
+    assert_eq!(r, QORelations::Overlaps);
+
     query.center = [2.7, -2.7, -2.7];
-    assert!(query.overlaps(&octant));
+    let r = query.relation(&octant);
+    assert_eq!(r, QORelations::Overlaps);
+
     query.center = [2.8, 2.8, 2.8];
-    assert!(!query.overlaps(&octant));
-}
-
-#[test]
-fn test_octree_contains() {
-    let octant = Octant::new(2.5);
-    let mut query = Query::new(1.4);
-    assert!(!query.contains(&octant));
-
-    query.radius = 4.4;         // 2.5*sqrt(3)
-    let x = query.contains(&octant);
-    assert!(query.contains(&octant));
+    let r = query.relation(&octant);
+    assert_eq!(r, QORelations::Disjoint);
 }
 // 81167b8a-bac9-4a8e-a6c9-56e48dcd6e79 ends here
 
