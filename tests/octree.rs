@@ -15,7 +15,8 @@ fn test_octree() {
     let mut tree = Octree::new(&points);
     tree.bucket_size = 1;
     tree.build();
-    let x = tree.search(q, 2.2);
-    println!("neighbors: {:?}", x);
+    let mut x = tree.search(q, 2.2);
+    x.sort();
+    assert_eq!(x, [0, 1, 2, 3, 11]);
 }
 // feb2e7b9-8cca-4210-a89d-a7f1d2a40d9e ends here
