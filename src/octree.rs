@@ -607,11 +607,8 @@ impl<'a> Octree<'a> {
             let mut todo = vec![];
             for &parent in nodes_to_visit.iter() {
                 let octant = &self[parent];
-                // case 1: partial overlap
-                if query.overlaps(&octant) {
-                    if ! query.contains(&octant) {
-                        // case 1.1: partial overlap
-                        // println!("case 1.1: {:?}", octant);
+                match query.relation(&octant) {
+                    QORelations::Overlaps => {
                         if octant.children.is_empty() {
                             // is a leaf node: save points
                             pts_maybe.extend(octant.ipoints.iter());
@@ -619,17 +616,21 @@ impl<'a> Octree<'a> {
                             // not a leaf node: go down to follow children
                             todo.extend(octant.children.iter());
                         }
-                    } else {
-                        // case 1.2: completely contains
-                        // keep all points in octant
-                        // println!("case 1.2: {:?}", octant);
+                    },
+
+                    QORelations::Contains => {
                         pts_maybe.extend(octant.ipoints.iter());
-                    }
-                } else {
-                    // case 2: no overlap
-                    // ignore points in octant
-                    // println!("case 3: {:?}", octant);
-                }
+                    },
+
+                    _ => (),
+                    // QORelations::Within => {
+                    //     ;
+                    // },
+
+                    // QORelations::Disjoint => {
+                    //     ;
+                    // },
+                };
             }
 
             nodes_to_visit.clear();
