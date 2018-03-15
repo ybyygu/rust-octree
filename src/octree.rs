@@ -8,7 +8,7 @@ use Points;
 // 7711fb40-175f-4198-bff1-71c5fe1d7bd3 ends here
 
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::d602663f-9f66-4e18-a538-e60b12985df3][d602663f-9f66-4e18-a538-e60b12985df3]]
-#[derive(PartialEq, Eq, Copy, Clone, Debug, Hash, Default)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug, Default, Hash)]
 pub struct OctantId (usize);
 
 #[derive(Clone, Debug, Default)]
@@ -217,8 +217,6 @@ pub struct Octree<'a> {
     pub bucket_size : usize,
     /// adjustable paramter for min octant extent while building octree
     pub min_extent  : f64,
-    /// adjustable parameter for max loop depth while building octree
-    pub max_depth   : usize,
 
     /// reference points in 3D space
     pub points  : &'a Points,
@@ -226,6 +224,9 @@ pub struct Octree<'a> {
     pub octants : Vec<Octant>,
     /// root octant index to Octree.octans
     pub root    : OctantId,
+
+    /// for quick access octant containing certain point
+    mapping_octants : HashMap<OctantId, &'a Octant>,
 }
 
 impl<'a> Octree<'a> {
@@ -242,7 +243,7 @@ impl<'a> Octree<'a> {
 
             bucket_size : 8,
             min_extent  : 2.0,
-            max_depth   : 9,
+            mapping_octants: HashMap::new(),
         }
     }
 
@@ -478,6 +479,10 @@ fn test_octree_factor() {
 impl<'a> Octree<'a> {
     /// build octree by recursively creating all octants
     pub fn build(&mut self) {
+        // calculate max allowed depth according min octant extent
+        let max_extent = self.octants[0].extent;
+        let max_depth = ((max_extent/self.min_extent).ln()/2f64.ln()).floor() as usize;
+
         let root = self.root();
         let npoints = self.points.len();
 
@@ -508,7 +513,7 @@ impl<'a> Octree<'a> {
                     break;
                 }
                 depth += 1;
-                if depth >= self.max_depth {
+                if depth >= max_depth {
                     eprintln!("octree build: max allowed depth {} reached.", depth);
                     break;
                 }
@@ -602,7 +607,6 @@ impl<'a> Octree<'a> {
 
         // step 1: record all nearby points by octree search
         let mut nodes_to_visit = vec![self.root()];
-        let mut depth = 0;
         loop {
             let mut todo = vec![];
             for &parent in nodes_to_visit.iter() {
@@ -622,14 +626,13 @@ impl<'a> Octree<'a> {
                         pts_maybe.extend(octant.ipoints.iter());
                     },
 
-                    _ => (),
-                    // QORelations::Within => {
-                    //     ;
-                    // },
+                    QORelations::Within => {
+                        ;
+                    },
 
-                    // QORelations::Disjoint => {
-                    //     ;
-                    // },
+                    QORelations::Disjoint => {
+                        ;
+                    },
                 };
             }
 
@@ -637,11 +640,6 @@ impl<'a> Octree<'a> {
             nodes_to_visit.extend(todo.iter());
 
             if nodes_to_visit.is_empty() {
-                break;
-            }
-            depth += 1;
-            if depth >= self.max_depth {
-                eprintln!("max allowed depth reached: {}", self.max_depth);
                 break;
             }
         }
