@@ -28,6 +28,7 @@ pub struct Octant {
 
 impl Octant {
     fn new(extent: f64) -> Self {
+        assert!(extent > 0.0, "extent has to be positive: {}", extent);
         Octant {
             extent: extent,
             ..Default::default()
@@ -100,6 +101,7 @@ enum QORelations {
 
 impl Query {
     pub fn new(r: f64) -> Self {
+        assert!(r > 0.0, "radius has to be positive: {}", r);
         Query {
             center : [0.0; 3],
             radius : r,
@@ -108,32 +110,35 @@ impl Query {
 
     /// get the relation of query ball with octant
     fn relation(&self, octant: &Octant) -> QORelations {
+        let extent = octant.extent;
+        let radius = self.radius;
+
         let x = (self.center[0] - octant.center[0]).abs();
         let y = (self.center[1] - octant.center[1]).abs();
         let z = (self.center[2] - octant.center[2]).abs();
 
         // 1. cheap case: xyz > e+r
-        let max_dist = octant.extent + self.radius;
+        let max_dist = extent + radius;
         if (x > max_dist && y > max_dist && z > max_dist) {
             return QORelations::Disjoint;
         }
 
         // 2. overlaps or not
-        if (x < octant.extent || y < octant.extent || z < octant.extent) {
+        if (x < extent || y < extent || z < extent) {
             // expected to be common: e >= r
             // expected to be rare  : e < r
-            if octant.extent >= self.radius {
+            if extent >= radius {
                 // 2.1 Within
                 // cheap case: xyz < e-r < e+r
-                let min_dist = octant.extent - self.radius;
+                let min_dist = extent - radius;
                 if (x <= min_dist && y <= min_dist && z <= min_dist) {
                     return QORelations::Within;
                 }
             } else {
-                if (x <= octant.extent && y <= octant.extent && z <= octant.extent) {
+                if (x <= extent && y <= extent && z <= extent) {
                     // distance to the farthest corner point
-                    let r_sqr = self.radius*self.radius;
-                    let e = octant.extent;
+                    let r_sqr = radius*radius;
+                    let e = extent;
                     let d_sqr = (x+e)*(x+e) + (y+e)*(y+e) + (z+e)*(z+e);
                     // 2.2 Contains
                     if d_sqr <= r_sqr {
@@ -149,61 +154,14 @@ impl Query {
         // FIXME: can we just assume "Overlaps" to improve efficiency?
         // expensive case: e < xyz < e+r
         // distance to the nearest corner point
-        let r_sqr = self.radius*self.radius;
-        let e = octant.extent;
+        let r_sqr = radius*radius;
+        let e = extent;
         let d_sqr = (x-e)*(x-e) + (y-e)*(y-e) + (z-e)*(z-e);
         if d_sqr > r_sqr {
             return QORelations::Disjoint;
         }
 
         QORelations::Overlaps
-    }
-
-    /// test if there is any overlapping between query ball and the octant
-    fn overlaps(&self, octant: &Octant) -> bool {
-        let x = (self.center[0] - octant.center[0]).abs();
-        let y = (self.center[1] - octant.center[1]).abs();
-        let z = (self.center[2] - octant.center[2]).abs();
-
-        let extent = octant.extent;
-        let max_dist = extent + self.radius;
-
-        // case 1: > e+r
-        if (x > max_dist || y > max_dist || z > max_dist) {
-            // println!("{:?}", "case 1");
-            return false;
-        }
-
-        // case 2: < e
-        if (x < extent || y < extent || z < extent) {
-            // println!("{:?}", "case 2");
-            return true;
-        }
-
-        // case 3: between e and e+r
-        // easy return, which will will minor improvement
-        // return true;
-
-        let nx = x - extent;
-        let ny = y - extent;
-        let nz = z - extent;
-
-        assert!(nx > 0., nx);
-        assert!(ny > 0., ny);
-        assert!(nz > 0., nz);
-
-        // println!("d = {:?}", nx*nx+ny*ny+nz*nz);
-        nx*nx + ny*ny + nz*nz < self.radius*self.radius
-    }
-
-    /// test if the octant is completely contained by the query ball
-    fn contains(&self, octant: &Octant) -> bool {
-        let extent = octant.extent;
-        let x = (self.center[0] - octant.center[0]).abs() + extent;
-        let y = (self.center[1] - octant.center[1]).abs() + extent;
-        let z = (self.center[2] - octant.center[2]).abs() + extent;
-
-        x*x + y*y + z*z < self.radius*self.radius
     }
 }
 // 68bdbfaf-0d07-40c4-a77c-5c6b43ab440e ends here
@@ -226,7 +184,7 @@ pub struct Octree<'a> {
     pub root    : OctantId,
 
     /// for quick access octant containing certain point
-    mapping_octants : HashMap<OctantId, &'a Octant>,
+    mapping_octants : HashMap<usize, usize>,
 }
 
 impl<'a> Octree<'a> {
@@ -366,7 +324,7 @@ impl<'a> Octree<'a> {
 /// octant: octree node data
 /// points: reference points in 3D space
 fn octree_create_child_octants(octant: &Octant, points: &Points) -> Vec<Octant> {
-    let extent = octant.extent / 2.;
+    let extent = octant.extent as f64 / 2f64;
 
     let mut octants = vec![];
 
@@ -480,8 +438,9 @@ impl<'a> Octree<'a> {
     /// build octree by recursively creating all octants
     pub fn build(&mut self) {
         // calculate max allowed depth according min octant extent
-        let max_extent = self.octants[0].extent;
-        let max_depth = ((max_extent/self.min_extent).ln()/2f64.ln()).floor() as usize;
+        let max_extent = self.octants[0].extent as f64;
+        let min_extent = self.min_extent as f64;
+        let max_depth = ((max_extent/min_extent).ln()/2f64.ln()).floor() as usize;
 
         let root = self.root();
         let npoints = self.points.len();
@@ -517,6 +476,14 @@ impl<'a> Octree<'a> {
                     eprintln!("octree build: max allowed depth {} reached.", depth);
                     break;
                 }
+            }
+        }
+
+        // cache octants
+        // create mapping of point => octant
+        for (i, ref octant) in self.octants.iter().enumerate() {
+            for &j in octant.ipoints.iter() {
+                self.mapping_octants.insert(j, i);
             }
         }
     }
@@ -636,17 +603,18 @@ impl<'a> Octree<'a> {
                 };
             }
 
-            nodes_to_visit.clear();
-            nodes_to_visit.extend(todo.iter());
-
-            if nodes_to_visit.is_empty() {
+            if todo.is_empty() {
                 break;
             }
+
+            nodes_to_visit.clear();
+            nodes_to_visit.extend(todo.iter());
         }
 
         // step 2: linear search
         let (qx, qy, qz) = (query.center[0], query.center[1], query.center[2]);
-        let rsqr = query.radius*query.radius;
+        let radius = query.radius as f64;
+        let rsqr = radius*radius;
 
         let mut neighbors = vec![];
         for &i in pts_maybe.iter() {
@@ -675,7 +643,41 @@ impl<'a> Octree<'a> {
     /// ------
     /// indices of neighboring points
     ///
-    pub fn neighbors(&self, index: usize) -> Vec<usize>{
+    pub fn neighbors(&self, index: usize, radius: f64) -> Vec<usize>{
+        // 1. find start octant containg the point with `index`
+        let x      = self.mapping_octants[&index];
+        let mut octant = &self.octants[x];
+
+        // 2. setup query ball
+        let mut query = Query::new(radius);
+        debug_assert!(index < self.points.len());
+        let p = self.points[index];
+        query.center = p;
+        println!("{:?}", query);
+
+        // loop {
+        //     // FIXME: use query.within method
+        //     match query.relation(&octant) {
+        //         QORelations::Within => {
+        //             break
+        //         },
+        //         _ => (),
+        //     }
+
+        //     // break if reaching the root node
+        //     if octant.parent == Some(self.root) {
+        //         break;
+        //     }
+
+        //     let parent_id = octant.parent.unwrap();
+        //     let parent_octant = &self[parent_id];
+        //     println!("{:?}", parent_octant);
+        //     for &o in parent_octant.children.iter() {
+        //         println!("{:?}", o);
+        //     }
+        //     break;
+        // }
+
         vec![0]
     }
 }
