@@ -10,16 +10,17 @@ fn main() {
     let stream = include_str!("data/pdb4rhv.xyz");
     let points = get_positions_from_xyz_stream(stream).unwrap();
 
-    let q = points[0];
     let mut tree = Octree::new(&points);
     tree.bucket_size = 8*8;
     tree.build();
 
-    let x = tree.search(q, 3.0);
-    assert!(x.contains(&0));
-    assert!(x.contains(&1241));
-
-    println!("neighbors: {:?}", x);
+    let stream = include_str!("data/result.txt");
+    for (line, &p) in stream.lines().zip(points.iter()) {
+        let mut expected: Vec<_> = line.split_whitespace().map(|x| x.parse().unwrap()).collect();
+        let mut x = tree.search(p, 3.0);
+        x.sort();
+        assert_eq!(x, expected);
+    }
 
     timeit!({
         for &q in tree.points.iter() {
