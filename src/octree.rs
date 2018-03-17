@@ -165,8 +165,61 @@ impl Query {
 
         QORelations::Overlaps
     }
+
+
 }
 // 68bdbfaf-0d07-40c4-a77c-5c6b43ab440e ends here
+
+// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::014b3147-1f42-4c2e-bdae-3995dbd5bf64][014b3147-1f42-4c2e-bdae-3995dbd5bf64]]
+impl Query {
+    /// test if there is overlapping between query ball and the octant
+    fn overlaps(&self, octant: &Octant) -> bool {
+        let x = (self.center[0] - octant.center[0]).abs();
+        let y = (self.center[1] - octant.center[1]).abs();
+        let z = (self.center[2] - octant.center[2]).abs();
+
+        let extent = octant.extent;
+        let max_dist = extent + self.radius;
+
+        // case 1: > e+r
+        if (x > max_dist || y > max_dist || z > max_dist) {
+            // println!("{:?}", "case 1");
+            return false;
+        }
+
+        // case 2: < e
+        if (x < extent || y < extent || z < extent) {
+            // println!("{:?}", "case 2");
+            return true;
+        }
+
+        // case 3: between e and e+r
+        // easy return, which will will minor improvement
+        // return true;
+
+        let nx = x - extent;
+        let ny = y - extent;
+        let nz = z - extent;
+
+        assert!(nx > 0., nx);
+        assert!(ny > 0., ny);
+        assert!(nz > 0., nz);
+
+        // println!("d = {:?}", nx*nx+ny*ny+nz*nz);
+        nx*nx + ny*ny + nz*nz < self.radius*self.radius
+    }
+
+    /// test if the octant is completely contained by the query ball
+    fn contains(&self, octant: &Octant) -> bool {
+        let extent = octant.extent;
+        let x = (self.center[0] - octant.center[0]).abs() + extent;
+        let y = (self.center[1] - octant.center[1]).abs() + extent;
+        let z = (self.center[2] - octant.center[2]).abs() + extent;
+
+        x*x + y*y + z*z < self.radius*self.radius
+    }
+}
+// 014b3147-1f42-4c2e-bdae-3995dbd5bf64 ends here
 
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::15e377a2-f1f4-483a-a91b-5ddf7f335cb0][15e377a2-f1f4-483a-a91b-5ddf7f335cb0]]
 use std::ops::{Index, IndexMut};
@@ -578,7 +631,7 @@ fn test_octree_split_children() {
 }
 // ea2c2276-5aaa-406e-9d5f-11a258f38cc0 ends here
 
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::bbcfff81-6ec6-4e9e-a787-8641691e6435][bbcfff81-6ec6-4e9e-a787-8641691e6435]]
+// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::old-bbcfff81-6ec6-4e9e-a787-8641691e6435][old-bbcfff81-6ec6-4e9e-a787-8641691e6435]]
 impl<'a> Octree<'a> {
     /// Search nearby points within radius of center.
     /// Return
@@ -593,12 +646,16 @@ impl<'a> Octree<'a> {
 
         // step 1: record all nearby points by octree search
         let mut nodes_to_visit = vec![self.root()];
+        let mut depth = 0;
         loop {
             let mut todo = vec![];
             for &parent in nodes_to_visit.iter() {
                 let octant = &self[parent];
-                match query.relation(&octant) {
-                    QORelations::Overlaps => {
+                // case 1: partial overlap
+                if query.overlaps(&octant) {
+                    if ! query.contains(&octant) {
+                        // case 1.1: partial overlap
+                        // println!("case 1.1: {:?}", octant);
                         if octant.children.is_empty() {
                             // is a leaf node: save points
                             pts_maybe.extend(octant.ipoints.iter());
@@ -606,23 +663,20 @@ impl<'a> Octree<'a> {
                             // not a leaf node: go down to follow children
                             todo.extend(octant.children.iter());
                         }
-                    },
-
-                    QORelations::Contains => {
+                    } else {
+                        // case 1.2: completely contains
+                        // keep all points in octant
+                        // println!("case 1.2: {:?}", octant);
                         pts_maybe.extend(octant.ipoints.iter());
-                    },
-
-                    QORelations::Within => {
-                        ;
-                    },
-
-                    QORelations::Disjoint => {
-                        ;
-                    },
-                };
+                    }
+                } else {
+                    // case 2: no overlap
+                    // ignore points in octant
+                    // println!("case 3: {:?}", octant);
+                }
             }
 
-            if todo.is_empty() {
+            if nodes_to_visit.is_empty() {
                 break;
             }
 
@@ -632,8 +686,7 @@ impl<'a> Octree<'a> {
 
         // step 2: linear search
         let (qx, qy, qz) = (query.center[0], query.center[1], query.center[2]);
-        let radius = query.radius as f64;
-        let rsqr = radius*radius;
+        let rsqr = query.radius*query.radius;
 
         let mut neighbors = vec![];
         for &i in pts_maybe.iter() {
@@ -647,4 +700,4 @@ impl<'a> Octree<'a> {
         neighbors
     }
 }
-// bbcfff81-6ec6-4e9e-a787-8641691e6435 ends here
+// old-bbcfff81-6ec6-4e9e-a787-8641691e6435 ends here
