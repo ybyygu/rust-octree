@@ -6,10 +6,11 @@ This is my first crate.
 * Benchmark data
 data points: example/data/pdb4rhv.xyz
 
-for version v0.0.1:
+for version v0.0.2:
 | rust linear     | 116.2 ms |
-| rust octree     | 14.5 ms  |
 | scipy cKDTree   | 43.7 ms  |
+| pykdtree        | 31.5 ms  |
+| rust octree     | 14.5 ms  |
 
 #+begin_src python
   def get_ckdtree(pts):
@@ -17,10 +18,27 @@ for version v0.0.1:
       tree = spatial.cKDTree(pts, leafsize=64)
       return tree
 
-  def test_scikdtree(pts, tree):
-      x = tree.query_radius(pts, r=3.0)
-      return x
+  def test_ckdtree(pts, tree):
+      final = tree.query_ball_point(pts, 3.)
+      return final
+
+  def get_pykdtree(pts):
+      from pykdtree.kdtree import KDTree
+      tree = KDTree(pts, leafsize=64)
+      return tree
+
+  def test_pykdtree(pts, tree, k=10):
+      d_array, i_array = tree.query(pts, k=k, distance_upper_bound=3.)
+      final = [i[d<3] for d, i in zip(d_array, i_array)]
+      return final
 #+end_src
+
+For pykdtree there is no query_ball_point alike method available, a python
+wrapper is used in test_pykdtree to get the same result. As a result, the
+performance of pykdtree is somehow underestimated.
+
+- [[https://github.com/storpipfugl/pykdtree][storpipfugl/pykdtree: Fast kd-tree implementation in Python]]
+- [[https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.cKDTree.html][scipy.spatial.cKDTree — SciPy v1.0.0 Reference Guide]]
 
 * Related crates
 - [[https://github.com/dorsath/octree][dorsath/octree: An octree implementation in rust]]
