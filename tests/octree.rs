@@ -18,8 +18,5 @@ fn test_octree() {
     let mut x = tree.search(q, 2.2);
     x.sort();
     assert_eq!(x, [0, 1, 2, 3, 11]);
-
-    let x = tree.neighbors(0, 2.2);
-    println!("{:?}", x);
 }
 // feb2e7b9-8cca-4210-a89d-a7f1d2a40d9e ends here

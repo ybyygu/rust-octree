@@ -220,6 +220,23 @@ impl<'a> Octree<'a> {
     pub fn is_empty(&self) -> bool {
         self.octants.is_empty()
     }
+
+    // /// Return sibling octants other than current node
+    // pub fn siblings(&self, node: OctantId) -> Vec<&Octant> {
+    //     let mut sibling_octants = vec![];
+    //     let octant = &self[node];
+    //     if let Some(parent) = octant.parent {
+    //         let parent_octant = &self[parent];
+    //         for &n in parent_octant.children.iter() {
+    //             let o = &self[n];
+    //             if o.ranking != octant.ranking {
+    //                 sibling_octants.push(o);
+    //             }
+    //         }
+    //     }
+
+    //     sibling_octants
+    // }
 }
 
 impl<'a> Index<OctantId> for Octree<'a> {
@@ -631,56 +648,3 @@ impl<'a> Octree<'a> {
     }
 }
 // bbcfff81-6ec6-4e9e-a787-8641691e6435 ends here
-
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::7e3b12c9-d3f8-4bfc-8ed0-46e2644660d3][7e3b12c9-d3f8-4bfc-8ed0-46e2644660d3]]
-impl<'a> Octree<'a> {
-    /// Find neighboring points
-    ///
-    /// Parameters
-    /// ----------
-    /// index: index of the center in points array
-    /// radius: the searching radius
-    ///
-    /// Return
-    /// ------
-    /// indices of neighboring points
-    ///
-    pub fn neighbors(&self, index: usize, radius: f64) -> Vec<usize>{
-        // 1. find start octant containg the point with `index`
-        let x      = self.mapping_octants[&index];
-        let mut octant = &self.octants[x];
-
-        // 2. setup query ball
-        let mut query = Query::new(radius);
-        debug_assert!(index < self.points.len());
-        let p = self.points[index];
-        query.center = p;
-        println!("{:?}", query);
-
-        // loop {
-        //     // FIXME: use query.within method
-        //     match query.relation(&octant) {
-        //         QORelations::Within => {
-        //             break
-        //         },
-        //         _ => (),
-        //     }
-
-        //     // break if reaching the root node
-        //     if octant.parent == Some(self.root) {
-        //         break;
-        //     }
-
-        //     let parent_id = octant.parent.unwrap();
-        //     let parent_octant = &self[parent_id];
-        //     println!("{:?}", parent_octant);
-        //     for &o in parent_octant.children.iter() {
-        //         println!("{:?}", o);
-        //     }
-        //     break;
-        // }
-
-        vec![0]
-    }
-}
-// 7e3b12c9-d3f8-4bfc-8ed0-46e2644660d3 ends here
