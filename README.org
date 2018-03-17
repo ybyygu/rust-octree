@@ -3,6 +3,25 @@
 
 This is my first crate.
 
+* Benchmark data
+data points: example/data/pdb4rhv.xyz
+
+for version v0.0.1:
+| rust linear     | 116.2 ms |
+| rust octree     | 14.5 ms  |
+| scipy cKDTree   | 43.7 ms  |
+
+#+begin_src python
+  def get_ckdtree(pts):
+      import scipy.spatial as spatial
+      tree = spatial.cKDTree(pts, leafsize=64)
+      return tree
+
+  def test_scikdtree(pts, tree):
+      x = tree.query_radius(pts, r=3.0)
+      return x
+#+end_src
+
 * Related crates
 - [[https://github.com/dorsath/octree][dorsath/octree: An octree implementation in rust]]
 - [[https://github.com/Nercury/octree-rs][Nercury/octree-rs: Bounded octree structure]]
