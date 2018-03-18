@@ -391,7 +391,7 @@ fn octree_create_child_octants(octant: &Octant, points: &Points) -> Vec<Octant> 
 // zyx: --- => 7
 // morton encode
 fn get_octant_cell_index(x: f64, y: f64, z: f64) -> usize {
-    // create loopup table, which could be faster
+    // create lookup table, which could be faster
     match (z.is_sign_positive(), y.is_sign_positive(), x.is_sign_positive()) {
         (true, true, true)    => 0,
         (true, true, false)   => 1,
