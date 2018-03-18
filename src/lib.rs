@@ -19,10 +19,10 @@ pub use octree::Octree;
 
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::9a8ceae5-46dd-4db5-a20d-2d78766568a3][9a8ceae5-46dd-4db5-a20d-2d78766568a3]]
 // set up aliases for convenience
-type Point = [f64; 3];
-type Points = Vec<Point>;
+pub type Point = [f64; 3];
+pub type Points = Vec<Point>;
 
-type Result<T> = std::result::Result<T, Box<error::Error>>;
+pub type Result<T> = std::result::Result<T, Box<error::Error>>;
 // 9a8ceae5-46dd-4db5-a20d-2d78766568a3 ends here
 
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::ddd95be2-3bf5-4478-a21b-ea0c8742f5cb][ddd95be2-3bf5-4478-a21b-ea0c8742f5cb]]
