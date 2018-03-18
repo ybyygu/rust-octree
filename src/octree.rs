@@ -8,7 +8,7 @@ use Points;
 // 7711fb40-175f-4198-bff1-71c5fe1d7bd3 ends here
 
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::d602663f-9f66-4e18-a538-e60b12985df3][d602663f-9f66-4e18-a538-e60b12985df3]]
-#[derive(PartialEq, Eq, Copy, Clone, Debug, Default, Hash)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Debug, Default, Hash)]
 pub struct OctantId (usize);
 
 #[derive(Clone, Debug, Default)]
@@ -80,6 +80,41 @@ impl Octant {
     }
 }
 // d602663f-9f66-4e18-a538-e60b12985df3 ends here
+
+// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::6405fadb-4d5f-4949-b689-d587cb65e506][6405fadb-4d5f-4949-b689-d587cb65e506]]
+impl Octant {
+    /// test if two octants are neighboring
+    fn neighboring(&self, other: &Octant) -> bool {
+        let e = other.extent + self.extent;
+
+        for i in 0..3 {
+            let v = (other.center[i] - self.center[i]).abs() - e;
+            if v > 0.001 {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
+#[test]
+fn test_octree_octant_neighboring() {
+    let mut octant1 = Octant::new(45.051);
+    octant1.center = [44.798034, 18.452375500000002, 121.71243299999999];
+    let mut octant2 = Octant::new(22.525501);
+    octant2.center = [67.32353549999999, -4.073125999999995, 144.2379345];
+    assert!(octant1.neighboring(&octant2));
+
+    let mut octant3 = Octant::new(22.525501);
+    octant3.center = [22.272532500000004, -4.073125999999995, 144.2379345];
+    assert!(octant2.neighboring(&octant3));
+
+    let mut octant4 = Octant::new(2.8156876874999996);
+    octant4.center = [13.825469437500008, -1.2574383124999953, 113.26536993749998];
+    assert!(!octant3.neighboring(&octant4));
+}
+// 6405fadb-4d5f-4949-b689-d587cb65e506 ends here
 
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::68bdbfaf-0d07-40c4-a77c-5c6b43ab440e][68bdbfaf-0d07-40c4-a77c-5c6b43ab440e]]
 #[derive(Debug)]
@@ -170,6 +205,7 @@ impl Query {
 
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::15e377a2-f1f4-483a-a91b-5ddf7f335cb0][15e377a2-f1f4-483a-a91b-5ddf7f335cb0]]
 use std::ops::{Index, IndexMut};
+use std::fmt;
 
 #[derive(Clone, Debug)]
 pub struct Octree<'a> {
@@ -593,8 +629,8 @@ impl<'a> Octree<'a> {
     /// Search nearby points within radius of center.
     /// Return
     /// ------
-    /// indices of nearby points
-    pub fn search(&self, p: Point, radius: f64) -> Vec<usize> {
+    /// indices of nearby points and distances
+    pub fn search(&self, p: Point, radius: f64) -> Vec<(usize, f64)> {
 
         let mut query = Query::new(radius);
         query.center = p;
@@ -647,7 +683,7 @@ impl<'a> Octree<'a> {
             let (px, py, pz) = (self.points[i][0], self.points[i][1], self.points[i][2]);
             let dsqr = (px-qx)*(px-qx) + (py-qy)*(py-qy) + (pz-qz)*(pz-qz);
             if dsqr < rsqr {
-                neighbors.push(i);
+                neighbors.push((i, dsqr.sqrt()));
             }
         }
 
@@ -656,7 +692,7 @@ impl<'a> Octree<'a> {
 }
 // bbcfff81-6ec6-4e9e-a787-8641691e6435 ends here
 
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::7e3b12c9-d3f8-4bfc-8ed0-46e2644660d3][7e3b12c9-d3f8-4bfc-8ed0-46e2644660d3]]
+// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::0a1e3f93-a0f2-46a0-a98b-a67d458e14ac][0a1e3f93-a0f2-46a0-a98b-a67d458e14ac]]
 impl<'a> Octree<'a> {
     /// Find neighboring points
     ///
@@ -668,33 +704,19 @@ impl<'a> Octree<'a> {
     /// ------
     /// indices of neighboring points in pairs
     ///
-    pub fn neighbors(&self, radius: f64) -> Vec<(usize, usize)>{
-        let radius2 = radius*radius;
-
+    pub fn neighbors(&self, radius: f64) -> Vec<(usize, usize, f64)>{
         let mut pairs = vec![];
-        let mut count = 0;
-        for octant in self.octants.iter() {
-            if octant.children.is_empty() {
-                count += 1;
-                // println!("octant ranking = {:?}", octant.ranking);
-                for (i, &pi) in octant.ipoints.iter().enumerate() {
-                    for (j, &pj) in octant.ipoints.iter().enumerate().skip(i+1) {
-                        let pi = self.points[pi];
-                        let pj = self.points[pj];
-                        let px = pj[0] - pi[0];
-                        let py = pj[1] - pi[1];
-                        let pz = pj[2] - pi[2];
-                        let d2 = px*px + py*py + pz*pz;
-                        if d2 < radius2 {
-                            pairs.push((i, j));
-                        }
-                    }
+
+        for (i, &p) in self.points.iter().enumerate() {
+            let neighbors = self.search(p, radius);
+            for &(j, d) in neighbors.iter() {
+                if j != i {
+                    pairs.push((i, j, d));
                 }
             }
         }
-        println!("non-empty octants = {:?}", count);
 
         pairs
     }
 }
-// 7e3b12c9-d3f8-4bfc-8ed0-46e2644660d3 ends here
+// 0a1e3f93-a0f2-46a0-a98b-a67d458e14ac ends here

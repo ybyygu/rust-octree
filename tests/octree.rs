@@ -19,8 +19,12 @@ fn test_octree() {
     for (line, &p) in stream.lines().zip(points.iter()) {
         let mut expected: Vec<_> = line.split_whitespace().map(|x| x.parse().unwrap()).collect();
         let mut x = tree.search(p, 3.0);
-        x.sort();
-        assert_eq!(x, expected);
+        let mut y: Vec<_> = x.iter().map(|v| v.0).collect();
+        y.sort();
+        assert_eq!(y, expected);
     }
+
+    let x = tree.neighbors(3.0);
+    // println!("{:?}", x);
 }
 // feb2e7b9-8cca-4210-a89d-a7f1d2a40d9e ends here
