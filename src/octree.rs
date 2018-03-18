@@ -90,7 +90,7 @@ pub struct Query {
 
 /// Four possible relations of a query ball with an octant
 #[derive(Debug, PartialEq)]
-enum QORelations {
+enum QORelation {
     /// the query ball has no common space with the octant
     Disjoint,
     /// the query ball is partially overlapping with the octant
@@ -111,7 +111,7 @@ impl Query {
     }
 
     /// get the relation of query ball with octant
-    fn relation(&self, octant: &Octant) -> QORelations {
+    fn relation(&self, octant: &Octant) -> QORelation {
         let extent = octant.extent;
         let radius = self.radius;
 
@@ -122,7 +122,7 @@ impl Query {
         // 1. cheap case: xyz > e+r
         let max_dist = extent + radius;
         if (x > max_dist || y > max_dist || z > max_dist) {
-            return QORelations::Disjoint;
+            return QORelation::Disjoint;
         }
 
         // 2. overlaps or not
@@ -134,7 +134,7 @@ impl Query {
                 // cheap case: xyz < e-r < e+r
                 let min_dist = extent - radius;
                 if (x <= min_dist && y <= min_dist && z <= min_dist) {
-                    return QORelations::Within;
+                    return QORelation::Within;
                 }
             } else {
                 if (x <= extent && y <= extent && z <= extent) {
@@ -144,12 +144,12 @@ impl Query {
                     let d_sqr = (x+e)*(x+e) + (y+e)*(y+e) + (z+e)*(z+e);
                     // 2.2 Contains
                     if d_sqr <= r_sqr {
-                        return QORelations::Contains;
+                        return QORelation::Contains;
                     }
                 }
             }
             // cheap case: e < x < e+r || e < y < e+r || z < e < e+r
-            return QORelations::Overlaps;
+            return QORelation::Overlaps;
         }
 
         // 3. corner case: Disjoint or Overlaps?
@@ -160,10 +160,10 @@ impl Query {
         let e = extent;
         let d_sqr = (x-e)*(x-e) + (y-e)*(y-e) + (z-e)*(z-e);
         if d_sqr > r_sqr {
-            return QORelations::Disjoint;
+            return QORelation::Disjoint;
         }
 
-        QORelations::Overlaps
+        QORelation::Overlaps
     }
 }
 // 68bdbfaf-0d07-40c4-a77c-5c6b43ab440e ends here
@@ -260,25 +260,25 @@ fn test_octree_query_relations() {
     let octant = Octant::new(2.5);
     let mut query = Query::new(1.4);
     let r = query.relation(&octant);
-    assert_eq!(r, QORelations::Within);
+    assert_eq!(r, QORelation::Within);
 
     query.radius = 4.4;         // 2.5*sqrt(3)
     let r = query.relation(&octant);
-    assert_eq!(r, QORelations::Contains);
+    assert_eq!(r, QORelation::Contains);
 
     let octant = Octant::new(2.5);
     let mut query = Query::new(0.4);
     query.center = [2.7, 2.7, 2.7];
     let r = query.relation(&octant);
-    assert_eq!(r, QORelations::Overlaps);
+    assert_eq!(r, QORelation::Overlaps);
 
     query.center = [2.7, -2.7, -2.7];
     let r = query.relation(&octant);
-    assert_eq!(r, QORelations::Overlaps);
+    assert_eq!(r, QORelation::Overlaps);
 
     query.center = [2.8, 2.8, 2.8];
     let r = query.relation(&octant);
-    assert_eq!(r, QORelations::Disjoint);
+    assert_eq!(r, QORelation::Disjoint);
 
     let query = Query {
         center: [31.079695, 10.200508, 146.169464],
@@ -288,7 +288,7 @@ fn test_octree_query_relations() {
     let mut octant = Octant::new(22.525501499999997);
     octant.center = [67.32353549999999, 40.977877, 144.2379345];
     let r = query.relation(&octant);
-    assert_eq!(r, QORelations::Disjoint);
+    assert_eq!(r, QORelation::Disjoint);
 }
 // 81167b8a-bac9-4a8e-a6c9-56e48dcd6e79 ends here
 
@@ -608,7 +608,7 @@ impl<'a> Octree<'a> {
             for &parent in nodes_to_visit.iter() {
                 let octant = &self[parent];
                 match query.relation(&octant) {
-                    QORelations::Overlaps | QORelations::Within => {
+                    QORelation::Overlaps | QORelation::Within => {
                         // println!("overlaps");
                         if octant.children.is_empty() {
                             // is a leaf node: save points
@@ -619,11 +619,11 @@ impl<'a> Octree<'a> {
                         }
                     },
 
-                    QORelations::Contains => {
+                    QORelation::Contains => {
                         pts_maybe.extend(octant.ipoints.iter());
                     },
 
-                    QORelations::Disjoint => {
+                    QORelation::Disjoint => {
                         ;
                     },
                 };
@@ -655,3 +655,46 @@ impl<'a> Octree<'a> {
     }
 }
 // bbcfff81-6ec6-4e9e-a787-8641691e6435 ends here
+
+// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::7e3b12c9-d3f8-4bfc-8ed0-46e2644660d3][7e3b12c9-d3f8-4bfc-8ed0-46e2644660d3]]
+impl<'a> Octree<'a> {
+    /// Find neighboring points
+    ///
+    /// Parameters
+    /// ----------
+    /// radius: the searching radius
+    ///
+    /// Return
+    /// ------
+    /// indices of neighboring points in pairs
+    ///
+    pub fn neighbors(&self, radius: f64) -> Vec<(usize, usize)>{
+        let radius2 = radius*radius;
+
+        let mut pairs = vec![];
+        let mut count = 0;
+        for octant in self.octants.iter() {
+            if octant.children.is_empty() {
+                count += 1;
+                // println!("octant ranking = {:?}", octant.ranking);
+                for (i, &pi) in octant.ipoints.iter().enumerate() {
+                    for (j, &pj) in octant.ipoints.iter().enumerate().skip(i+1) {
+                        let pi = self.points[pi];
+                        let pj = self.points[pj];
+                        let px = pj[0] - pi[0];
+                        let py = pj[1] - pi[1];
+                        let pz = pj[2] - pi[2];
+                        let d2 = px*px + py*py + pz*pz;
+                        if d2 < radius2 {
+                            pairs.push((i, j));
+                        }
+                    }
+                }
+            }
+        }
+        println!("non-empty octants = {:?}", count);
+
+        pairs
+    }
+}
+// 7e3b12c9-d3f8-4bfc-8ed0-46e2644660d3 ends here
