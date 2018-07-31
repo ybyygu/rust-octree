@@ -75,7 +75,7 @@ impl<'a> IndexMut<OctantId> for Octree<'a> {
 
 // [[file:~/Workspace/Programming/rust-octree/rust-octree.note::90433ce9-a63e-4f8e-b497-6cdd3bb88ca8][90433ce9-a63e-4f8e-b497-6cdd3bb88ca8]]
 impl<'a> Octree<'a> {
-    /// Add octant as orphon node in tree, return OctantId for further operation
+    /// Add octant as orphan node in tree, return OctantId for further operation
     fn new_node(&mut self, octant: Octant) -> OctantId {
         let next_index = self.octants.len();
         self.octants.push(octant);

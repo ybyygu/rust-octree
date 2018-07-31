@@ -1,7 +1,7 @@
 # [[file:~/Workspace/Programming/rust-octree/rust-octree.note::1ce15f44-f288-46f0-adcf-a37c35b79dfc][1ce15f44-f288-46f0-adcf-a37c35b79dfc]]
 [package]
 name = "octree"
-version = "0.0.3"
+version = "0.0.4"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 
 [dependencies]
