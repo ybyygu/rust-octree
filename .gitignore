@@ -12,4 +12,5 @@ Cargo.lock
 # org-mode related files
 *.note
 /.ltximg/
+/ltxpng/
 /data/
