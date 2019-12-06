@@ -4,6 +4,7 @@
 [package]
 name = "octree"
 version = "0.0.5"
+edition = "2018"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 
 [dependencies]

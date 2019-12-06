@@ -1,14 +1,7 @@
-// base
-
-// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*base][base:1]]
 // set up aliases for convenience
 pub type Point = [f64; 3];
 pub type Points = Vec<Point>;
-// base:1 ends here
 
-// octant
-
-// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*octant][octant:1]]
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Debug, Default, Hash)]
 pub struct OctantId(pub usize);
 
@@ -73,14 +66,7 @@ impl Octant {
         octant
     }
 }
-// octant:1 ends here
 
-
-
-// Octant和Octant之间的最小距离
-// #+name: 6405fadb-4d5f-4949-b689-d587cb65e506
-
-// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::6405fadb-4d5f-4949-b689-d587cb65e506][6405fadb-4d5f-4949-b689-d587cb65e506]]
 impl Octant {
     /// test if two octants are neighboring
     pub fn neighboring(&self, other: &Octant) -> bool {
@@ -113,11 +99,7 @@ fn test_octree_octant_neighboring() {
     octant4.center = [13.825469437500008, -1.2574383124999953, 113.26536993749998];
     assert!(!octant3.neighboring(&octant4));
 }
-// 6405fadb-4d5f-4949-b689-d587cb65e506 ends here
 
-// query ball
-
-// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*query%20ball][query ball:1]]
 #[derive(Debug)]
 pub struct Query {
     pub center: Point,
@@ -202,11 +184,7 @@ impl Query {
         QORelation::Overlaps
     }
 }
-// query ball:1 ends here
 
-// tests
-
-// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*tests][tests:1]]
 #[test]
 fn test_octree_query_relations() {
     let octant = Octant::new(2.5);
@@ -242,13 +220,7 @@ fn test_octree_query_relations() {
     let r = query.relation(&octant);
     assert_eq!(r, QORelation::Disjoint);
 }
-// tests:1 ends here
 
-
-
-// #+name: 85a1bbdb-53b6-4dff-89e2-1ceba40b3c02
-
-// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::85a1bbdb-53b6-4dff-89e2-1ceba40b3c02][85a1bbdb-53b6-4dff-89e2-1ceba40b3c02]]
 pub const XYZ_TXT: &str = " N                  0.49180679   -7.01280337   -3.37298245
  H                  1.49136679   -7.04246937   -3.37298245
  C                 -0.19514721   -5.73699137   -3.37298245
@@ -273,4 +245,3 @@ fn test_octree_init() {
     assert_relative_eq!(octant.center[2], -2.75229595, epsilon=1e-4);
     assert_relative_eq!(octant.extent, 2.145741195, epsilon=1e-4);
 }
-// 85a1bbdb-53b6-4dff-89e2-1ceba40b3c02 ends here

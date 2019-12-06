@@ -4,10 +4,7 @@
 // :ID:       38431531-4955-4c81-9570-86c776602192
 // :END:
 
-// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*test_octree.rs][test_octree.rs:1]]
-#[macro_use]
-extern crate octree;
-
+// [[file:~/Workspace/Programming/octree/octree.note::*test_octree.rs][test_octree.rs:1]]
 #[test]
 fn test_octree() {
     use octree::*;

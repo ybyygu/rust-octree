@@ -3,10 +3,9 @@
 // :header-args: :tangle examples/demo.rs
 // :END:
 
-// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*demo.rs][demo.rs:1]]
+// [[file:~/Workspace/Programming/octree/octree.note::*demo.rs][demo.rs:1]]
 #[macro_use]
 extern crate timeit;
-extern crate octree;
 
 fn main() {
     // external xyz file

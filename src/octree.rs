@@ -1,13 +1,10 @@
-// base
-
-// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*base][base:1]]
 use std::collections::HashMap;
 use std::ops::{Index, IndexMut};
 
 use super::get_positions_from_xyz_stream;
 use super::get_positions_from_xyzfile;
 
-use types::*;
+use crate::types::*;
 
 #[derive(Clone, Debug)]
 pub struct Octree<'a> {
@@ -73,12 +70,7 @@ impl<'a> IndexMut<OctantId> for Octree<'a> {
         &mut self.octants[node.0]
     }
 }
-// base:1 ends here
 
-// split node
-// 将一个大的octant分割成8个小的.
-
-// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*split%20node][split node:1]]
 impl<'a> Octree<'a> {
     /// Add octant as orphan node in tree, return OctantId for further operation
     fn new_node(&mut self, octant: Octant) -> OctantId {
@@ -144,9 +136,7 @@ fn octree_create_child_octants(octant: &Octant, points: &Points) -> Vec<Octant> 
 
     octants
 }
-// split node:1 ends here
 
-// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*split%20node][split node:2]]
 // zyx: +++ => 0
 // zyx: ++- => 1
 // zyx: --- => 7
@@ -225,11 +215,7 @@ fn test_octree_factor() {
     assert_eq!(-1.0, x[1]);
     assert_eq!(1.0, x[2]);
 }
-// split node:2 ends here
 
-// build tree
-
-// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*build%20tree][build tree:1]]
 impl<'a> Octree<'a> {
     /// build octree by recursively creating all octants
     pub fn build(&mut self) {
@@ -284,15 +270,7 @@ impl<'a> Octree<'a> {
         }
     }
 }
-// build tree:1 ends here
 
-// tests                                                        :ATTACH:
-// :PROPERTIES:
-// :Attachments: test.com
-// :ID:       5c01b428-563a-4c9b-9e23-0256c5d752e3
-// :END:
-
-// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*tests][tests:1]]
 #[test]
 fn test_octree_struct() {
     let points = get_positions_from_xyz_stream(&XYZ_TXT).unwrap();
@@ -318,9 +296,7 @@ fn test_octree_struct() {
     assert_eq!(octant1.extent, 1.2);
     assert!(octant1.children.contains(&child3));
 }
-// tests:1 ends here
 
-// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*tests][tests:2]]
 #[test]
 fn test_octree_split_children() {
     let points = get_positions_from_xyz_stream(&XYZ_TXT).unwrap();
@@ -359,11 +335,7 @@ fn test_octree_split_children() {
     assert!(child7.ipoints.contains(&2));
     assert_eq!(child7.parent, Some(root));
 }
-// tests:2 ends here
 
-// src
-
-// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*src][src:1]]
 impl<'a> Octree<'a> {
     /// Search nearby points within radius of center.
     /// Return
@@ -426,11 +398,7 @@ impl<'a> Octree<'a> {
         neighbors
     }
 }
-// src:1 ends here
 
-// src
-
-// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*src][src:1]]
 impl<'a> Octree<'a> {
     /// Find neighboring points
     ///
@@ -457,4 +425,3 @@ impl<'a> Octree<'a> {
         pairs
     }
 }
-// src:1 ends here
