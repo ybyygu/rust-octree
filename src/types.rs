@@ -1,12 +1,16 @@
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::172e83c4-c449-4a14-a72b-84c77c44743e][172e83c4-c449-4a14-a72b-84c77c44743e]]
+// base
+
+// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*base][base:1]]
 // set up aliases for convenience
 pub type Point = [f64; 3];
 pub type Points = Vec<Point>;
-// 172e83c4-c449-4a14-a72b-84c77c44743e ends here
+// base:1 ends here
 
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::d602663f-9f66-4e18-a538-e60b12985df3][d602663f-9f66-4e18-a538-e60b12985df3]]
+// octant
+
+// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*octant][octant:1]]
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Debug, Default, Hash)]
-pub struct OctantId (pub usize);
+pub struct OctantId(pub usize);
 
 #[derive(Clone, Debug, Default)]
 /// A specific node of octree
@@ -59,15 +63,24 @@ impl Octant {
         }
         let mut octant = Octant::new(0.5 * distance);
 
-        octant.center = [(p_max[0] + p_min[0])/2., (p_max[1] + p_min[1])/2., (p_max[2] + p_min[2])/2.,];
+        octant.center = [
+            (p_max[0] + p_min[0]) / 2.,
+            (p_max[1] + p_min[1]) / 2.,
+            (p_max[2] + p_min[2]) / 2.,
+        ];
         octant.ipoints = (0..points.len()).collect();
 
         octant
     }
 }
-// d602663f-9f66-4e18-a538-e60b12985df3 ends here
+// octant:1 ends here
 
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::6405fadb-4d5f-4949-b689-d587cb65e506][6405fadb-4d5f-4949-b689-d587cb65e506]]
+
+
+// Octant和Octant之间的最小距离
+// #+name: 6405fadb-4d5f-4949-b689-d587cb65e506
+
+// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::6405fadb-4d5f-4949-b689-d587cb65e506][6405fadb-4d5f-4949-b689-d587cb65e506]]
 impl Octant {
     /// test if two octants are neighboring
     pub fn neighboring(&self, other: &Octant) -> bool {
@@ -102,11 +115,13 @@ fn test_octree_octant_neighboring() {
 }
 // 6405fadb-4d5f-4949-b689-d587cb65e506 ends here
 
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::68bdbfaf-0d07-40c4-a77c-5c6b43ab440e][68bdbfaf-0d07-40c4-a77c-5c6b43ab440e]]
+// query ball
+
+// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*query%20ball][query ball:1]]
 #[derive(Debug)]
 pub struct Query {
-    pub center : Point,
-    pub radius : f64,
+    pub center: Point,
+    pub radius: f64,
 }
 
 /// Four possible relations of a query ball with an octant
@@ -126,8 +141,8 @@ impl Query {
     pub fn new(r: f64) -> Self {
         assert!(r.is_sign_positive(), "radius has to be positive: {}", r);
         Query {
-            center : [0.0; 3],
-            radius : r,
+            center: [0.0; 3],
+            radius: r,
         }
     }
 
@@ -160,9 +175,9 @@ impl Query {
             } else {
                 if (x <= extent && y <= extent && z <= extent) {
                     // distance to the farthest corner point
-                    let r_sqr = radius*radius;
+                    let r_sqr = radius * radius;
                     let e = extent;
-                    let d_sqr = (x+e)*(x+e) + (y+e)*(y+e) + (z+e)*(z+e);
+                    let d_sqr = (x + e) * (x + e) + (y + e) * (y + e) + (z + e) * (z + e);
                     // 2.2 Contains
                     if d_sqr <= r_sqr {
                         return QORelation::Contains;
@@ -177,9 +192,9 @@ impl Query {
         // FIXME: can we just assume "Overlaps" to improve efficiency?
         // expensive case: e < xyz < e+r
         // distance to the nearest corner point
-        let r_sqr = radius*radius;
+        let r_sqr = radius * radius;
         let e = extent;
-        let d_sqr = (x-e)*(x-e) + (y-e)*(y-e) + (z-e)*(z-e);
+        let d_sqr = (x - e) * (x - e) + (y - e) * (y - e) + (z - e) * (z - e);
         if d_sqr > r_sqr {
             return QORelation::Disjoint;
         }
@@ -187,9 +202,11 @@ impl Query {
         QORelation::Overlaps
     }
 }
-// 68bdbfaf-0d07-40c4-a77c-5c6b43ab440e ends here
+// query ball:1 ends here
 
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::81167b8a-bac9-4a8e-a6c9-56e48dcd6e79][81167b8a-bac9-4a8e-a6c9-56e48dcd6e79]]
+// tests
+
+// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*tests][tests:1]]
 #[test]
 fn test_octree_query_relations() {
     let octant = Octant::new(2.5);
@@ -197,7 +214,7 @@ fn test_octree_query_relations() {
     let r = query.relation(&octant);
     assert_eq!(r, QORelation::Within);
 
-    query.radius = 4.4;         // 2.5*sqrt(3)
+    query.radius = 4.4; // 2.5*sqrt(3)
     let r = query.relation(&octant);
     assert_eq!(r, QORelation::Contains);
 
@@ -217,7 +234,7 @@ fn test_octree_query_relations() {
 
     let query = Query {
         center: [31.079695, 10.200508, 146.169464],
-        radius: 3.0
+        radius: 3.0,
     };
 
     let mut octant = Octant::new(22.525501499999997);
@@ -225,9 +242,13 @@ fn test_octree_query_relations() {
     let r = query.relation(&octant);
     assert_eq!(r, QORelation::Disjoint);
 }
-// 81167b8a-bac9-4a8e-a6c9-56e48dcd6e79 ends here
+// tests:1 ends here
 
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::85a1bbdb-53b6-4dff-89e2-1ceba40b3c02][85a1bbdb-53b6-4dff-89e2-1ceba40b3c02]]
+
+
+// #+name: 85a1bbdb-53b6-4dff-89e2-1ceba40b3c02
+
+// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::85a1bbdb-53b6-4dff-89e2-1ceba40b3c02][85a1bbdb-53b6-4dff-89e2-1ceba40b3c02]]
 pub const XYZ_TXT: &str = " N                  0.49180679   -7.01280337   -3.37298245
  H                  1.49136679   -7.04246937   -3.37298245
  C                 -0.19514721   -5.73699137   -3.37298245

@@ -1,4 +1,6 @@
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::7711fb40-175f-4198-bff1-71c5fe1d7bd3][7711fb40-175f-4198-bff1-71c5fe1d7bd3]]
+// base
+
+// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*base][base:1]]
 use std::collections::HashMap;
 use std::ops::{Index, IndexMut};
 
@@ -10,19 +12,19 @@ use types::*;
 #[derive(Clone, Debug)]
 pub struct Octree<'a> {
     /// adjustable parameter for min number points of octant while building octree
-    pub bucket_size : usize,
+    pub bucket_size: usize,
     /// adjustable paramter for min octant extent while building octree
-    pub min_extent  : f64,
+    pub min_extent: f64,
 
     /// reference points in 3D space
-    pub points  : &'a Points,
+    pub points: &'a Points,
     /// private data storing all octants in octree
-    pub octants : Vec<Octant>,
+    pub octants: Vec<Octant>,
     /// root octant index to Octree.octans
-    pub root    : OctantId,
+    pub root: OctantId,
 
     /// for quick access octant containing certain point
-    mapping_octants : HashMap<usize, usize>,
+    mapping_octants: HashMap<usize, usize>,
 }
 
 impl<'a> Octree<'a> {
@@ -33,12 +35,12 @@ impl<'a> Octree<'a> {
         let root = OctantId(0);
 
         Octree {
-            points    : points,
-            octants   : octants,
-            root      : root,
+            points: points,
+            octants: octants,
+            root: root,
 
-            bucket_size : 8,
-            min_extent  : 2.0,
+            bucket_size: 8,
+            min_extent: 2.0,
             mapping_octants: HashMap::new(),
         }
     }
@@ -71,9 +73,12 @@ impl<'a> IndexMut<OctantId> for Octree<'a> {
         &mut self.octants[node.0]
     }
 }
-// 7711fb40-175f-4198-bff1-71c5fe1d7bd3 ends here
+// base:1 ends here
 
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::90433ce9-a63e-4f8e-b497-6cdd3bb88ca8][90433ce9-a63e-4f8e-b497-6cdd3bb88ca8]]
+// split node
+// 将一个大的octant分割成8个小的.
+
+// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*split%20node][split node:1]]
 impl<'a> Octree<'a> {
     /// Add octant as orphan node in tree, return OctantId for further operation
     fn new_node(&mut self, octant: Octant) -> OctantId {
@@ -120,7 +125,7 @@ fn octree_create_child_octants(octant: &Octant, points: &Points) -> Vec<Octant> 
         let factors = get_octant_cell_factor(i);
         // j = 0, 1, 2 => x, y, z
         for j in 0..3 {
-            o.center[j] += extent*factors[j] + octant.center[j]
+            o.center[j] += extent * factors[j] + octant.center[j]
         }
         octants.push(o);
     }
@@ -139,27 +144,31 @@ fn octree_create_child_octants(octant: &Octant, points: &Points) -> Vec<Octant> 
 
     octants
 }
-// 90433ce9-a63e-4f8e-b497-6cdd3bb88ca8 ends here
+// split node:1 ends here
 
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::89da6ad4-0055-4246-84c7-9d19194c5405][89da6ad4-0055-4246-84c7-9d19194c5405]]
+// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*split%20node][split node:2]]
 // zyx: +++ => 0
 // zyx: ++- => 1
 // zyx: --- => 7
 // morton encode
 fn get_octant_cell_index(x: f64, y: f64, z: f64) -> usize {
     // create lookup table, which could be faster
-    match (z.is_sign_positive(), y.is_sign_positive(), x.is_sign_positive()) {
-        (true, true, true)    => 0,
-        (true, true, false)   => 1,
-        (true, false, true)   => 2,
-        (true, false, false)  => 3,
-        (false, true, true)   => 4,
-        (false, true, false)  => 5,
-        (false, false, true)  => 6,
+    match (
+        z.is_sign_positive(),
+        y.is_sign_positive(),
+        x.is_sign_positive(),
+    ) {
+        (true, true, true) => 0,
+        (true, true, false) => 1,
+        (true, false, true) => 2,
+        (true, false, false) => 3,
+        (false, true, true) => 4,
+        (false, true, false) => 5,
+        (false, false, true) => 6,
         (false, false, false) => 7,
     }
 
-    // another way: bit shift
+    // another way: using bit shift
     // let bits = [z.is_sign_negative(), y.is_sign_negative(), x.is_sign_negative()];
     // bits.iter().fold(0, |acc, &b| acc*2 + b as usize)
 }
@@ -195,7 +204,7 @@ fn get_octant_cell_factor(index: usize) -> Point {
         match ((index & 0b100) >> 2) == 0 {
             true => 1.0,
             false => -1.0,
-        }
+        },
     ]
 }
 
@@ -216,16 +225,18 @@ fn test_octree_factor() {
     assert_eq!(-1.0, x[1]);
     assert_eq!(1.0, x[2]);
 }
-// 89da6ad4-0055-4246-84c7-9d19194c5405 ends here
+// split node:2 ends here
 
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::9db18239-7b01-48a3-aedc-7bcc082e7949][9db18239-7b01-48a3-aedc-7bcc082e7949]]
+// build tree
+
+// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*build%20tree][build tree:1]]
 impl<'a> Octree<'a> {
     /// build octree by recursively creating all octants
     pub fn build(&mut self) {
         // calculate max allowed depth according min octant extent
         let max_extent = self.octants[0].extent as f64;
         let min_extent = self.min_extent as f64;
-        let max_depth = ((max_extent/min_extent).ln()/2f64.ln()).floor() as usize;
+        let max_depth = ((max_extent / min_extent).ln() / 2f64.ln()).floor() as usize;
 
         let root = self.root();
         let npoints = self.points.len();
@@ -273,9 +284,15 @@ impl<'a> Octree<'a> {
         }
     }
 }
-// 9db18239-7b01-48a3-aedc-7bcc082e7949 ends here
+// build tree:1 ends here
 
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::9317478e-996f-4323-9310-e1ca841b8832][9317478e-996f-4323-9310-e1ca841b8832]]
+// tests                                                        :ATTACH:
+// :PROPERTIES:
+// :Attachments: test.com
+// :ID:       5c01b428-563a-4c9b-9e23-0256c5d752e3
+// :END:
+
+// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*tests][tests:1]]
 #[test]
 fn test_octree_struct() {
     let points = get_positions_from_xyz_stream(&XYZ_TXT).unwrap();
@@ -301,9 +318,9 @@ fn test_octree_struct() {
     assert_eq!(octant1.extent, 1.2);
     assert!(octant1.children.contains(&child3));
 }
-// 9317478e-996f-4323-9310-e1ca841b8832 ends here
+// tests:1 ends here
 
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::ea2c2276-5aaa-406e-9d5f-11a258f38cc0][ea2c2276-5aaa-406e-9d5f-11a258f38cc0]]
+// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*tests][tests:2]]
 #[test]
 fn test_octree_split_children() {
     let points = get_positions_from_xyz_stream(&XYZ_TXT).unwrap();
@@ -322,8 +339,8 @@ fn test_octree_split_children() {
     let x = child.center[0] - octant.center[0];
     let y = child.center[1] - octant.center[1];
     let z = child.center[2] - octant.center[2];
-    assert_relative_eq!(x, y, epsilon=1e-4);
-    assert_relative_eq!(x, z, epsilon=1e-4);
+    assert_relative_eq!(x, y, epsilon = 1e-4);
+    assert_relative_eq!(x, z, epsilon = 1e-4);
 
     assert_eq!(octant.extent, child.extent * 2.0);
 
@@ -331,9 +348,9 @@ fn test_octree_split_children() {
     let x = child.center[0] - octant.center[0];
     let y = child.center[1] - octant.center[1];
     let z = child.center[2] - octant.center[2];
-    assert_relative_eq!(x, child.extent * -1., epsilon=1e-4);
-    assert_relative_eq!(y, child.extent * 1., epsilon=1e-4);
-    assert_relative_eq!(z, child.extent * 1., epsilon=1e-4);
+    assert_relative_eq!(x, child.extent * -1., epsilon = 1e-4);
+    assert_relative_eq!(y, child.extent * 1., epsilon = 1e-4);
+    assert_relative_eq!(z, child.extent * 1., epsilon = 1e-4);
 
     let child7 = &octree[children[7]];
     println!("{:?}", octant);
@@ -342,16 +359,17 @@ fn test_octree_split_children() {
     assert!(child7.ipoints.contains(&2));
     assert_eq!(child7.parent, Some(root));
 }
-// ea2c2276-5aaa-406e-9d5f-11a258f38cc0 ends here
+// tests:2 ends here
 
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::bbcfff81-6ec6-4e9e-a787-8641691e6435][bbcfff81-6ec6-4e9e-a787-8641691e6435]]
+// src
+
+// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*src][src:1]]
 impl<'a> Octree<'a> {
     /// Search nearby points within radius of center.
     /// Return
     /// ------
     /// indices of nearby points and distances
     pub fn search(&self, p: Point, radius: f64) -> Vec<(usize, f64)> {
-
         let mut query = Query::new(radius);
         query.center = p;
 
@@ -373,15 +391,13 @@ impl<'a> Octree<'a> {
                             // not a leaf node: go down to follow children
                             todo.extend(octant.children.iter());
                         }
-                    },
+                    }
 
                     QORelation::Contains => {
                         pts_maybe.extend(octant.ipoints.iter());
-                    },
+                    }
 
-                    QORelation::Disjoint => {
-                        ;
-                    },
+                    QORelation::Disjoint => {}
                 };
             }
 
@@ -396,12 +412,12 @@ impl<'a> Octree<'a> {
         // step 2: linear search
         let (qx, qy, qz) = (query.center[0], query.center[1], query.center[2]);
         let radius = query.radius as f64;
-        let rsqr = radius*radius;
+        let rsqr = radius * radius;
 
         let mut neighbors = vec![];
         for &i in pts_maybe.iter() {
             let (px, py, pz) = (self.points[i][0], self.points[i][1], self.points[i][2]);
-            let dsqr = (px-qx)*(px-qx) + (py-qy)*(py-qy) + (pz-qz)*(pz-qz);
+            let dsqr = (px - qx) * (px - qx) + (py - qy) * (py - qy) + (pz - qz) * (pz - qz);
             if dsqr < rsqr {
                 neighbors.push((i, dsqr.sqrt()));
             }
@@ -410,9 +426,11 @@ impl<'a> Octree<'a> {
         neighbors
     }
 }
-// bbcfff81-6ec6-4e9e-a787-8641691e6435 ends here
+// src:1 ends here
 
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::0a1e3f93-a0f2-46a0-a98b-a67d458e14ac][0a1e3f93-a0f2-46a0-a98b-a67d458e14ac]]
+// src
+
+// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*src][src:1]]
 impl<'a> Octree<'a> {
     /// Find neighboring points
     ///
@@ -424,7 +442,7 @@ impl<'a> Octree<'a> {
     /// ------
     /// indices of neighboring points in pairs
     ///
-    pub fn neighbors(&self, radius: f64) -> Vec<(usize, usize, f64)>{
+    pub fn neighbors(&self, radius: f64) -> Vec<(usize, usize, f64)> {
         let mut pairs = vec![];
 
         for (i, &p) in self.points.iter().enumerate() {
@@ -439,4 +457,4 @@ impl<'a> Octree<'a> {
         pairs
     }
 }
-// 0a1e3f93-a0f2-46a0-a98b-a67d458e14ac ends here
+// src:1 ends here

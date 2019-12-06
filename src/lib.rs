@@ -1,25 +1,29 @@
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::7896c853-796e-4f97-b1d4-45546d4491db][7896c853-796e-4f97-b1d4-45546d4491db]]
-#[macro_use] extern crate timeit;
-#[macro_use] extern crate approx;
+// lib.rs
+// :PROPERTIES:
+// :header-args: :tangle src/lib.rs
+// :END:
+
+// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*lib.rs][lib.rs:1]]
+#[macro_use]
+extern crate timeit;
+#[macro_use]
+extern crate approx;
 
 use std::error;
-use std::io::{self, BufReader};
-use std::io::prelude::*;
 use std::fs::File;
+use std::io::prelude::*;
+use std::io::{self, BufReader};
 
-mod types;
 pub mod octree;
+mod types;
 pub use octree::Octree;
 
-use types::{
-    Point,
-    Points,
-};
+use types::{Point, Points};
 
 pub type Result<T> = std::result::Result<T, Box<error::Error>>;
-// 7896c853-796e-4f97-b1d4-45546d4491db ends here
+// lib.rs:1 ends here
 
-// [[file:~/Workspace/Programming/rust-octree/rust-octree.note::ddd95be2-3bf5-4478-a21b-ea0c8742f5cb][ddd95be2-3bf5-4478-a21b-ea0c8742f5cb]]
+// [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*lib.rs][lib.rs:2]]
 pub fn get_positions_from_xyz_stream(txt: &str) -> Result<Points> {
     let mut positions = Vec::new();
 
@@ -51,4 +55,4 @@ pub fn get_positions_from_xyzfile(filename: &str) -> Result<Points> {
     f.read_to_string(&mut buffer)?;
     get_positions_from_xyz_stream(&buffer)
 }
-// ddd95be2-3bf5-4478-a21b-ea0c8742f5cb ends here
+// lib.rs:2 ends here
