@@ -41,23 +41,23 @@ impl Query {
 
         // 1. cheap case: xyz > e+r
         let max_dist = extent + radius;
-        if (x > max_dist || y > max_dist || z > max_dist) {
+        if x > max_dist || y > max_dist || z > max_dist {
             return QORelation::Disjoint;
         }
 
         // 2. overlaps or not
-        if (x < extent || y < extent || z < extent) {
+        if x < extent || y < extent || z < extent {
             // expected to be common: e >= r
             // expected to be rare  : e < r
             if extent >= radius {
                 // 2.1 Within
                 // cheap case: xyz < e-r < e+r
                 let min_dist = extent - radius;
-                if (x <= min_dist && y <= min_dist && z <= min_dist) {
+                if x <= min_dist && y <= min_dist && z <= min_dist {
                     return QORelation::Within;
                 }
             } else {
-                if (x <= extent && y <= extent && z <= extent) {
+                if x <= extent && y <= extent && z <= extent {
                     // distance to the farthest corner point
                     let r_sqr = radius * radius;
                     let e = extent;
@@ -125,8 +125,6 @@ fn test_octree_query_relations() {
 
 #[test]
 fn test_octree_init() {
-    use super::*;
-
     const XYZ_TXT: &str = " N                  0.49180679   -7.01280337   -3.37298245
  H                  1.49136679   -7.04246937   -3.37298245
  C                 -0.19514721   -5.73699137   -3.37298245
@@ -144,7 +142,7 @@ fn test_octree_init() {
         let mut positions = Vec::new();
         for line in txt.lines() {
             let attrs: Vec<_> = line.split_whitespace().collect();
-            let (symbol, position) = attrs.split_first().expect("empty line");
+            let (_symbol, position) = attrs.split_first().expect("empty line");
             assert_eq!(position.len(), 3,);
             let p: Vec<f64> = position.iter().map(|x| x.parse().unwrap()).collect();
             positions.push([p[0], p[1], p[2]]);

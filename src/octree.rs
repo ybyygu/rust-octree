@@ -182,7 +182,7 @@ fn test_octree_cell_index() {
 // useful for calculate center of child octant
 // morton decode
 fn get_octant_cell_factor(index: usize) -> Point {
-    debug_assert!(index < 8 && index >= 0);
+    debug_assert!(index < 8);
     [
         match (index & 0b001) == 0 {
             true => 1.0,
@@ -290,7 +290,7 @@ fn test_octree_struct() {
         let mut positions = Vec::new();
         for line in txt.lines() {
             let attrs: Vec<_> = line.split_whitespace().collect();
-            let (symbol, position) = attrs.split_first().expect("empty line");
+            let (_symbol, position) = attrs.split_first().expect("empty line");
             assert_eq!(position.len(), 3,);
             let p: Vec<f64> = position.iter().map(|x| x.parse().unwrap()).collect();
             positions.push([p[0], p[1], p[2]]);
@@ -342,7 +342,7 @@ fn test_octree_split_children() {
         let mut positions = Vec::new();
         for line in txt.lines() {
             let attrs: Vec<_> = line.split_whitespace().collect();
-            let (symbol, position) = attrs.split_first().expect("empty line");
+            let (_symbol, position) = attrs.split_first().expect("empty line");
             assert_eq!(position.len(), 3,);
             let p: Vec<f64> = position.iter().map(|x| x.parse().unwrap()).collect();
             positions.push([p[0], p[1], p[2]]);
