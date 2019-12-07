@@ -1,24 +1,25 @@
 use std::collections::HashMap;
 use std::ops::{Index, IndexMut};
 
-use super::get_positions_from_xyz_stream;
-use super::get_positions_from_xyzfile;
+use crate::octant::*;
+use crate::query::*;
 
-use crate::types::*;
+type Point = [f64; 3];
+type Points = Vec<Point>;
 
 #[derive(Clone, Debug)]
 pub struct Octree<'a> {
-    /// adjustable parameter for min number points of octant while building octree
-    pub bucket_size: usize,
-    /// adjustable paramter for min octant extent while building octree
-    pub min_extent: f64,
-
     /// reference points in 3D space
     pub points: &'a Points,
+    /// adjustable parameter for min number points of octant while building octree
+    pub bucket_size: usize,
+
+    /// adjustable paramter for min octant extent while building octree
+    min_extent: f64,
     /// private data storing all octants in octree
-    pub octants: Vec<Octant>,
+    octants: Vec<Octant>,
     /// root octant index to Octree.octans
-    pub root: OctantId,
+    root: OctantId,
 
     /// for quick access octant containing certain point
     mapping_octants: HashMap<usize, usize>,
@@ -42,7 +43,7 @@ impl<'a> Octree<'a> {
         }
     }
 
-    pub fn root(&self) -> OctantId {
+    fn root(&self) -> OctantId {
         OctantId(0)
     }
 
@@ -226,7 +227,6 @@ impl<'a> Octree<'a> {
 
         let root = self.root();
         let npoints = self.points.len();
-
         if npoints > self.bucket_size {
             let mut depth = 0;
             let mut need_split = vec![root];
@@ -273,7 +273,33 @@ impl<'a> Octree<'a> {
 
 #[test]
 fn test_octree_struct() {
-    let points = get_positions_from_xyz_stream(&XYZ_TXT).unwrap();
+    const XYZ_TXT: &str = " N                  0.49180679   -7.01280337   -3.37298245
+   H                  1.49136679   -7.04246937   -3.37298245
+   C                 -0.19514721   -5.73699137   -3.37298245
+   H                 -0.81998021   -5.66018837   -4.26280545
+   C                 -1.08177021   -5.59086937   -2.14084145
+   C                  0.79533179   -4.58138037   -3.37298245
+   H                 -0.46899721   -5.65651737   -1.24178645
+   H                 -1.58492621   -4.62430837   -2.16719845
+   H                 -1.82600521   -6.38719137   -2.13160945
+   O                  2.03225779   -4.81286537   -3.37298245
+   H                  0.43991988   -3.57213195   -3.37298245
+   H                 -0.03366507   -7.86361434   -3.37298245 ";
+
+    fn read_points(txt: &str) -> Vec<[f64; 3]> {
+        let mut positions = Vec::new();
+        for line in txt.lines() {
+            let attrs: Vec<_> = line.split_whitespace().collect();
+            let (symbol, position) = attrs.split_first().expect("empty line");
+            assert_eq!(position.len(), 3,);
+            let p: Vec<f64> = position.iter().map(|x| x.parse().unwrap()).collect();
+            positions.push([p[0], p[1], p[2]]);
+        }
+    
+        positions
+    }
+
+    let points = read_points(&XYZ_TXT);
     let mut octree = Octree::new(&points);
 
     // test octree
@@ -299,7 +325,33 @@ fn test_octree_struct() {
 
 #[test]
 fn test_octree_split_children() {
-    let points = get_positions_from_xyz_stream(&XYZ_TXT).unwrap();
+    const XYZ_TXT: &str = " N                  0.49180679   -7.01280337   -3.37298245
+   H                  1.49136679   -7.04246937   -3.37298245
+   C                 -0.19514721   -5.73699137   -3.37298245
+   H                 -0.81998021   -5.66018837   -4.26280545
+   C                 -1.08177021   -5.59086937   -2.14084145
+   C                  0.79533179   -4.58138037   -3.37298245
+   H                 -0.46899721   -5.65651737   -1.24178645
+   H                 -1.58492621   -4.62430837   -2.16719845
+   H                 -1.82600521   -6.38719137   -2.13160945
+   O                  2.03225779   -4.81286537   -3.37298245
+   H                  0.43991988   -3.57213195   -3.37298245
+   H                 -0.03366507   -7.86361434   -3.37298245 ";
+
+    fn read_points(txt: &str) -> Vec<[f64; 3]> {
+        let mut positions = Vec::new();
+        for line in txt.lines() {
+            let attrs: Vec<_> = line.split_whitespace().collect();
+            let (symbol, position) = attrs.split_first().expect("empty line");
+            assert_eq!(position.len(), 3,);
+            let p: Vec<f64> = position.iter().map(|x| x.parse().unwrap()).collect();
+            positions.push([p[0], p[1], p[2]]);
+        }
+    
+        positions
+    }
+
+    let points = read_points(&XYZ_TXT);
     let mut octree = Octree::new(&points);
     let root = octree.root();
     octree.split_octant(root);
@@ -308,7 +360,6 @@ fn test_octree_split_children() {
     let octree = octree;
     // root octant
     let octant = &octree[root];
-    println!("{:?}", octree);
 
     let children = &octant.children;
     let child = &octree[children[0]];
@@ -329,9 +380,6 @@ fn test_octree_split_children() {
     assert_relative_eq!(z, child.extent * 1., epsilon = 1e-4);
 
     let child7 = &octree[children[7]];
-    println!("{:?}", octant);
-    println!("{:?}", child7);
-
     assert!(child7.ipoints.contains(&2));
     assert_eq!(child7.parent, Some(root));
 }

@@ -1,6 +1,6 @@
 # cargo
 
-# [[file:~/Workspace/Programming/rust-libs/rust-octree/rust-octree.note::*cargo][cargo:1]]
+# [[file:~/Workspace/Programming/octree/octree.note::*cargo][cargo:1]]
 [package]
 name = "octree"
 version = "0.0.5"
@@ -8,6 +8,10 @@ edition = "2018"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 
 [dependencies]
+vecfx = { git = "https://github.com/gchemol/vecfx.git" }
+failure = "0.1"
+
+[dev-dependencies]
 timeit = "*"
 approx = "*"
 # cargo:1 ends here

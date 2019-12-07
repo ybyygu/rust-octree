@@ -7,12 +7,25 @@
 #[macro_use]
 extern crate timeit;
 
+fn read_points(txt: &str) -> Vec<[f64; 3]> {
+    let mut positions = Vec::new();
+    for line in txt.lines() {
+        let attrs: Vec<_> = line.split_whitespace().collect();
+        let (symbol, position) = attrs.split_first().expect("empty line");
+        assert_eq!(position.len(), 3,);
+        let p: Vec<f64> = position.iter().map(|x| x.parse().unwrap()).collect();
+        positions.push([p[0], p[1], p[2]]);
+    }
+
+    positions
+}
+
 fn main() {
-    // external xyz file
     use octree::*;
 
+    // external xyz file
     let stream = include_str!("data/pdb4rhv.xyz");
-    let points = get_positions_from_xyz_stream(stream).unwrap();
+    let points = read_points(stream);
 
     let mut tree = Octree::new(&points);
     tree.bucket_size = 8 * 8;
