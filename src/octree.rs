@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::ops::{Index, IndexMut};
 
+use log::*;
+
 use crate::octant::*;
 use crate::query::*;
 
@@ -218,7 +220,7 @@ fn test_octree_factor() {
 }
 
 impl<'a> Octree<'a> {
-    /// build octree by recursively creating all octants
+    /// Build octree by recursively dividing child octants
     pub fn build(&mut self) {
         // calculate max allowed depth according min octant extent
         let max_extent = self.octants[0].extent as f64;
@@ -250,12 +252,12 @@ impl<'a> Octree<'a> {
 
                 // 3. loop control
                 if need_split.is_empty() {
-                    println!("octree built after {:?} cycles.", depth);
+                    info!("octree built after {:?} cycles.", depth);
                     break;
                 }
                 depth += 1;
                 if depth >= max_depth {
-                    eprintln!("octree build: max allowed depth {} reached.", depth);
+                    warn!("octree build: max allowed depth {} reached.", depth);
                     break;
                 }
             }
@@ -386,9 +388,11 @@ fn test_octree_split_children() {
 
 impl<'a> Octree<'a> {
     /// Search nearby points within radius of center.
+    ///
     /// Return
     /// ------
     /// indices of nearby points and distances
+    ///
     pub fn search(&self, p: Point, radius: f64) -> Vec<(usize, f64)> {
         let mut query = Query::new(radius);
         query.center = p;
@@ -433,22 +437,23 @@ impl<'a> Octree<'a> {
         let (qx, qy, qz) = (query.center[0], query.center[1], query.center[2]);
         let radius = query.radius as f64;
         let rsqr = radius * radius;
-
-        let mut neighbors = vec![];
-        for &i in pts_maybe.iter() {
-            let (px, py, pz) = (self.points[i][0], self.points[i][1], self.points[i][2]);
-            let dsqr = (px - qx) * (px - qx) + (py - qy) * (py - qy) + (pz - qz) * (pz - qz);
-            if dsqr < rsqr {
-                neighbors.push((i, dsqr.sqrt()));
-            }
-        }
-
-        neighbors
+        pts_maybe
+            .into_iter()
+            .filter_map(|i| {
+                let (px, py, pz) = (self.points[i][0], self.points[i][1], self.points[i][2]);
+                let dsqr = (px - qx) * (px - qx) + (py - qy) * (py - qy) + (pz - qz) * (pz - qz);
+                if dsqr < rsqr {
+                    Some((i, dsqr.sqrt()))
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 }
 
 impl<'a> Octree<'a> {
-    /// Find neighboring points
+    /// Find all pair of points within a cutoff `radius`.
     ///
     /// Parameters
     /// ----------
