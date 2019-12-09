@@ -10,9 +10,9 @@ type Point = [f64; 3];
 type Points = Vec<Point>;
 
 #[derive(Clone, Debug)]
-pub struct Octree<'a> {
+pub struct Octree {
     /// reference points in 3D space
-    pub points: &'a Points,
+    pub points: Points,
 
     /// adjustable paramter for min octant extent while building octree
     min_extent: f64,
@@ -25,15 +25,15 @@ pub struct Octree<'a> {
     mapping_octants: HashMap<usize, usize>,
 }
 
-impl<'a> Octree<'a> {
+impl Octree {
     /// Construct octree from points in 3D space
-    pub fn new(points: &'a Points) -> Self {
+    pub fn new(points: &[Point]) -> Self {
         let octant = Octant::from_points(&points);
         let octants = vec![octant];
         let root = OctantId(0);
 
         Octree {
-            points: points,
+            points: points.to_vec(),
             octants: octants,
             root: root,
 
@@ -57,7 +57,7 @@ impl<'a> Octree<'a> {
     }
 }
 
-impl<'a> Index<OctantId> for Octree<'a> {
+impl Index<OctantId> for Octree {
     type Output = Octant;
 
     fn index(&self, node: OctantId) -> &Octant {
@@ -65,13 +65,13 @@ impl<'a> Index<OctantId> for Octree<'a> {
     }
 }
 
-impl<'a> IndexMut<OctantId> for Octree<'a> {
+impl IndexMut<OctantId> for Octree {
     fn index_mut(&mut self, node: OctantId) -> &mut Octant {
         &mut self.octants[node.0]
     }
 }
 
-impl<'a> Octree<'a> {
+impl Octree {
     /// Add octant as orphan node in tree, return OctantId for further operation
     fn new_node(&mut self, octant: Octant) -> OctantId {
         let next_index = self.octants.len();
@@ -216,7 +216,7 @@ fn test_octree_factor() {
     assert_eq!(1.0, x[2]);
 }
 
-impl<'a> Octree<'a> {
+impl Octree {
     /// Build octree by recursively dividing child octants
     ///
     /// * Parameters
@@ -392,7 +392,7 @@ fn test_octree_split_children() {
     assert_eq!(child7.parent, Some(root));
 }
 
-impl<'a> Octree<'a> {
+impl Octree {
     /// Search nearby points within radius of center.
     ///
     /// Parameters
@@ -462,7 +462,7 @@ impl<'a> Octree<'a> {
     }
 }
 
-impl<'a> Octree<'a> {
+impl Octree {
     /// Find all pair of points within a cutoff `radius`.
     ///
     /// Parameters
