@@ -4,7 +4,7 @@
 // :ID:       38431531-4955-4c81-9570-86c776602192
 // :END:
 
-// [[file:~/Workspace/Programming/octree/octree.note::*test_octree.rs][test_octree.rs:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/octree/octree.note::*test_octree.rs][test_octree.rs:1]]
 #[test]
 fn test_octree() {
     use octree::*;
@@ -26,8 +26,8 @@ fn test_octree() {
     let points = read_points(stream);
 
     let mut tree = Octree::new(&points);
-    tree.bucket_size = 8 * 8;
-    tree.build();
+    let bucket_size = 8 * 8;
+    tree.build(bucket_size);
 
     let stream = include_str!("data/result.txt");
     for (line, &p) in stream.lines().zip(points.iter()) {

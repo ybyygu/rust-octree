@@ -3,7 +3,7 @@
 // :header-args: :tangle examples/demo.rs
 // :END:
 
-// [[file:~/Workspace/Programming/octree/octree.note::*demo.rs][demo.rs:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/octree/octree.note::*demo.rs][demo.rs:1]]
 #[macro_use]
 extern crate timeit;
 
@@ -28,8 +28,8 @@ fn main() {
     let points = read_points(stream);
 
     let mut tree = Octree::new(&points);
-    tree.bucket_size = 8 * 8;
-    tree.build();
+    let bucket_size = 8 * 8;
+    tree.build(bucket_size);
 
     let stream = include_str!("data/result.txt");
     for (line, &p) in stream.lines().zip(points.iter()) {

@@ -13,8 +13,6 @@ type Points = Vec<Point>;
 pub struct Octree<'a> {
     /// reference points in 3D space
     pub points: &'a Points,
-    /// adjustable parameter for min number points of octant while building octree
-    pub bucket_size: usize,
 
     /// adjustable paramter for min octant extent while building octree
     min_extent: f64,
@@ -39,7 +37,6 @@ impl<'a> Octree<'a> {
             octants: octants,
             root: root,
 
-            bucket_size: 8,
             min_extent: 2.0,
             mapping_octants: HashMap::new(),
         }
@@ -221,15 +218,24 @@ fn test_octree_factor() {
 
 impl<'a> Octree<'a> {
     /// Build octree by recursively dividing child octants
-    pub fn build(&mut self) {
+    ///
+    /// * Parameters
+    ///
+    /// - bucket_size: the max number of points each octant holds before
+    /// stopping recursively dividing.
+    pub fn build(&mut self, bucket_size: usize) {
+        debug_assert!(bucket_size > 0, "invalid bucket_size param!");
+
         // calculate max allowed depth according min octant extent
         let max_extent = self.octants[0].extent as f64;
-        let min_extent = self.min_extent as f64;
+        let min_extent = self.min_extent;
+        debug_assert!(min_extent.is_sign_positive());
+        // FIXME: useful or not?
         let max_depth = ((max_extent / min_extent).ln() / 2f64.ln()).floor() as usize;
 
         let root = self.root();
         let npoints = self.points.len();
-        if npoints > self.bucket_size {
+        if npoints > bucket_size {
             let mut depth = 0;
             let mut need_split = vec![root];
             loop {
@@ -240,7 +246,7 @@ impl<'a> Octree<'a> {
                     for &child_node in &self[parent_node].children {
                         let octant = &self[child_node];
                         let n = octant.ipoints.len();
-                        if n > self.bucket_size {
+                        if n > bucket_size {
                             remained.push(child_node);
                         }
                     }
@@ -389,10 +395,14 @@ fn test_octree_split_children() {
 impl<'a> Octree<'a> {
     /// Search nearby points within radius of center.
     ///
+    /// Parameters
+    /// ----------
+    /// - p: the coordinates of the point searching for neighbors.
+    /// - radius: the cutoff radius for neighbors.
+    ///
     /// Return
     /// ------
     /// indices of nearby points and distances
-    ///
     pub fn search(&self, p: Point, radius: f64) -> Vec<(usize, f64)> {
         let mut query = Query::new(radius);
         query.center = p;
