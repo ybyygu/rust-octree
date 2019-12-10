@@ -7,12 +7,11 @@ use crate::octant::*;
 use crate::query::*;
 
 type Point = [f64; 3];
-type Points = Vec<Point>;
 
 #[derive(Clone, Debug)]
 pub struct Octree {
     /// reference points in 3D space
-    pub points: Points,
+    pub points: Vec<Point>,
 
     /// adjustable paramter for min octant extent while building octree
     min_extent: f64,
@@ -105,7 +104,7 @@ impl Octree {
 
 /// octant: octree node data
 /// points: reference points in 3D space
-fn octree_create_child_octants(octant: &Octant, points: &Points) -> Vec<Octant> {
+fn octree_create_child_octants(octant: &Octant, points: &[Point]) -> Vec<Octant> {
     let extent = octant.extent as f64 / 2f64;
 
     let mut octants = vec![];
