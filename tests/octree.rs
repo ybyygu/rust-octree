@@ -25,7 +25,7 @@ fn test_octree() {
     let stream = include_str!("data/pdb4rhv.xyz");
     let points = read_points(stream);
 
-    let mut tree = Octree::new(&points);
+    let mut tree = Octree::new(points.clone());
     let bucket_size = 8 * 8;
     tree.build(bucket_size);
 
