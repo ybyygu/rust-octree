@@ -9,9 +9,9 @@ use crate::query::*;
 type Point = [f64; 3];
 
 #[derive(Clone, Debug)]
-pub struct Octree {
+pub struct Octree<'a> {
     /// reference points in 3D space
-    pub points: Vec<Point>,
+    pub points: &'a [Point],
 
     /// adjustable paramter for min octant extent while building octree
     min_extent: f64,
@@ -24,15 +24,15 @@ pub struct Octree {
     mapping_octants: HashMap<usize, usize>,
 }
 
-impl Octree {
+impl<'a> Octree<'a> {
     /// Construct octree from points in 3D space
-    pub fn new(points: &[Point]) -> Self {
+    pub fn new(points: &'a [Point]) -> Self {
         let octant = Octant::from_points(&points);
         let octants = vec![octant];
         let root = OctantId(0);
 
         Octree {
-            points: points.to_vec(),
+            points,
             octants: octants,
             root: root,
 
@@ -56,7 +56,7 @@ impl Octree {
     }
 }
 
-impl Index<OctantId> for Octree {
+impl<'a> Index<OctantId> for Octree<'a> {
     type Output = Octant;
 
     fn index(&self, node: OctantId) -> &Octant {
@@ -64,13 +64,13 @@ impl Index<OctantId> for Octree {
     }
 }
 
-impl IndexMut<OctantId> for Octree {
+impl<'a> IndexMut<OctantId> for Octree<'a> {
     fn index_mut(&mut self, node: OctantId) -> &mut Octant {
         &mut self.octants[node.0]
     }
 }
 
-impl Octree {
+impl<'a> Octree<'a> {
     /// Add octant as orphan node in tree, return OctantId for further operation
     fn new_node(&mut self, octant: Octant) -> OctantId {
         let next_index = self.octants.len();
@@ -215,7 +215,7 @@ fn test_octree_factor() {
     assert_eq!(1.0, x[2]);
 }
 
-impl Octree {
+impl<'a> Octree<'a> {
     /// Build octree by recursively dividing child octants
     ///
     /// * Parameters
@@ -391,7 +391,7 @@ fn test_octree_split_children() {
     assert_eq!(child7.parent, Some(root));
 }
 
-impl Octree {
+impl<'a> Octree<'a> {
     /// Search nearby points within radius of center.
     ///
     /// Parameters
@@ -461,7 +461,7 @@ impl Octree {
     }
 }
 
-impl Octree {
+impl<'a> Octree<'a> {
     /// Find all pair of points within a cutoff `radius`.
     ///
     /// Parameters
