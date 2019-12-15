@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::ops::{Index, IndexMut};
 
+use rayon::prelude::*;
+
 use log::*;
 
 use crate::octant::*;
@@ -13,8 +15,6 @@ pub struct Octree {
     /// reference points in 3D space
     pub points: Vec<Point>,
 
-    /// adjustable paramter for min octant extent while building octree
-    min_extent: f64,
     /// private data storing all octants in octree
     octants: Vec<Octant>,
     /// root octant index to Octree.octans
@@ -37,7 +37,6 @@ impl Octree {
             octants: octants,
             root: root,
 
-            min_extent: 2.0,
             mapping_octants: HashMap::new(),
         }
     }
@@ -108,15 +107,29 @@ impl Octree {
 fn octree_create_child_octants(octant: &Octant, points: &[Point]) -> Vec<Octant> {
     let extent = octant.extent as f64 / 2f64;
 
-    let mut octants = vec![];
-
     // initialize 8 child octants
     // 1. update center
-    for i in 0..8 {
+
+    // using rayon is slow here
+    // let mut octants: Vec<_> = (0..8usize)
+    //     .into_par_iter()
+    //     .map(|i| {
+    //         let mut o = Octant::new(extent);
+    //         let factors = get_octant_cell_factor(i);
+    //         // j = 0, 1, 2 => x, y, z
+    //         for j in (0..3) {
+    //             o.center[j] += extent * factors[j] + octant.center[j]
+    //         }
+    //         o
+    //     })
+    //     .collect();
+
+    let mut octants = vec![];
+    for i in (0..8) {
         let mut o = Octant::new(extent);
         let factors = get_octant_cell_factor(i);
         // j = 0, 1, 2 => x, y, z
-        for j in 0..3 {
+        for j in (0..3) {
             o.center[j] += extent * factors[j] + octant.center[j]
         }
         octants.push(o);
@@ -226,19 +239,11 @@ impl Octree {
     pub fn build(&mut self, bucket_size: usize) {
         debug_assert!(bucket_size > 0, "invalid bucket_size param!");
 
-        // calculate max allowed depth according min octant extent
-        let max_extent = self.octants[0].extent as f64;
-        let min_extent = self.min_extent;
-        debug_assert!(min_extent.is_sign_positive());
-        // FIXME: useful or not?
-        let max_depth = ((max_extent / min_extent).ln() / 2f64.ln()).floor() as usize;
-
         let root = self.root();
         let npoints = self.points.len();
         if npoints > bucket_size {
-            let mut depth = 0;
             let mut need_split = vec![root];
-            loop {
+            for depth in 0.. {
                 // 1. split into child octants
                 let mut remained = vec![];
                 for &parent_node in need_split.iter() {
@@ -258,12 +263,7 @@ impl Octree {
 
                 // 3. loop control
                 if need_split.is_empty() {
-                    info!("octree built after {:?} cycles.", depth);
-                    break;
-                }
-                depth += 1;
-                if depth >= max_depth {
-                    warn!("octree build: max allowed depth {} reached.", depth);
+                    debug!("octree built after {:?} cycles.", depth);
                     break;
                 }
             }
@@ -277,6 +277,20 @@ impl Octree {
             }
         }
     }
+}
+
+// FIXME: useful or not?
+/// calculate max allowed depth according min octant extent
+fn max_depth(max_extent: f64, min_extent: f64) -> usize {
+    assert!(
+        min_extent < max_extent,
+        "invalid parameters: {} {}",
+        max_extent,
+        min_extent
+    );
+    assert!(min_extent.is_sign_positive());
+    let max_depth = ((max_extent / min_extent).ln() / 2f64.ln()).floor() as usize;
+    max_depth
 }
 
 #[test]
@@ -299,7 +313,7 @@ fn test_octree_struct() {
         for line in txt.lines() {
             let attrs: Vec<_> = line.split_whitespace().collect();
             let (_symbol, position) = attrs.split_first().expect("empty line");
-            assert_eq!(position.len(), 3,);
+            assert_eq!(position.len(), 3, "{:?}", position);
             let p: Vec<f64> = position.iter().map(|x| x.parse().unwrap()).collect();
             positions.push([p[0], p[1], p[2]]);
         }
@@ -351,7 +365,7 @@ fn test_octree_split_children() {
         for line in txt.lines() {
             let attrs: Vec<_> = line.split_whitespace().collect();
             let (_symbol, position) = attrs.split_first().expect("empty line");
-            assert_eq!(position.len(), 3,);
+            assert_eq!(position.len(), 3, "{:?}", position);
             let p: Vec<f64> = position.iter().map(|x| x.parse().unwrap()).collect();
             positions.push([p[0], p[1], p[2]]);
         }
