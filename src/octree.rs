@@ -403,6 +403,7 @@ impl Octree {
     /// Return
     /// ------
     /// indices of nearby points and distances
+    // FIXME: return an iterator?
     pub fn search(&self, p: Point, radius: f64) -> Vec<(usize, f64)> {
         let mut query = Query::new(radius);
         query.center = p;

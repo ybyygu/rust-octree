@@ -1,9 +1,9 @@
 # cargo
 
-# [[file:~/Workspace/Programming/octree/octree.note::*cargo][cargo:1]]
+# [[file:~/Workspace/Programming/gchemol-rs/octree/octree.note::*cargo][cargo:1]]
 [package]
 name = "octree"
-version = "0.0.5"
+version = "0.0.6"
 edition = "2018"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 
@@ -11,8 +11,14 @@ authors = ["Wenping Guo <ybyygu@gmail.com>"]
 log = "^0.4"
 vecfx = { git = "https://github.com/gchemol/vecfx.git" }
 failure = "0.1"
+rayon = "1"
 
 [dev-dependencies]
+criterion = "*"
 timeit = "*"
 approx = "*"
+
+[[bench]]
+name = "my_benchmark"
+harness = false
 # cargo:1 ends here

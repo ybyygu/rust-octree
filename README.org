@@ -1,16 +1,16 @@
+# Created 2019-12-15 Sun 09:45
 #+TITLE: Octree for nearest neighbor search in 3D space
-#+SETUPFILE: ~/Notes/common.org
-
+#+AUTHOR: Wenping Guo
 This is my first crate.
 
 * Benchmark data
 data points: example/data/pdb4rhv.xyz
 
 for version v0.0.2:
-| rust linear     | 116.2 ms |
-| scipy cKDTree   | 43.7 ms  |
-| pykdtree        | 31.5 ms  |
-| rust octree     | 14.5 ms  |
+| rust linear   | 116.2 ms |
+| scipy cKDTree | 43.7 ms  |
+| pykdtree      | 31.5 ms  |
+| rust octree   | 14.5 ms  |
 
 #+begin_src python
   def get_ckdtree(pts):
