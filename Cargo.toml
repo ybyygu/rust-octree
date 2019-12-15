@@ -11,9 +11,9 @@ authors = ["Wenping Guo <ybyygu@gmail.com>"]
 log = "^0.4"
 vecfx = { git = "https://github.com/gchemol/vecfx.git" }
 failure = "0.1"
-rayon = "1"
 
 [dev-dependencies]
+rayon = "1"
 criterion = "*"
 timeit = "*"
 approx = "*"

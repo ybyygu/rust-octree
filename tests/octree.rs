@@ -14,7 +14,7 @@ fn test_octree() {
         for line in txt.lines() {
             let attrs: Vec<_> = line.split_whitespace().collect();
             let (_symbol, position) = attrs.split_first().expect("empty line");
-            assert_eq!(position.len(), 3,);
+            assert_eq!(position.len(), 3, "{:?}", position);
             let p: Vec<f64> = position.iter().map(|x| x.parse().unwrap()).collect();
             positions.push([p[0], p[1], p[2]]);
         }
@@ -35,8 +35,7 @@ fn test_octree() {
             .split_whitespace()
             .map(|x| x.parse().unwrap())
             .collect();
-        let x = tree.search(p, 3.0);
-        let mut y: Vec<_> = x.iter().map(|v| v.0).collect();
+        let mut y: Vec<_> = tree.search(p, 3.0).map(|v| v.0).collect();
         y.sort();
         assert_eq!(y, expected);
     }

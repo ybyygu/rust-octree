@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use std::ops::{Index, IndexMut};
 
-use rayon::prelude::*;
-
 use log::*;
 
 use crate::octant::*;
@@ -19,9 +17,8 @@ pub struct Octree {
     octants: Vec<Octant>,
     /// root octant index to Octree.octans
     root: OctantId,
-
-    /// for quick access octant containing certain point
-    mapping_octants: HashMap<usize, usize>,
+    // /// for quick access octant containing certain point
+    // mapping_octants: HashMap<usize, usize>,
 }
 
 impl Octree {
@@ -36,8 +33,7 @@ impl Octree {
             points,
             octants: octants,
             root: root,
-
-            mapping_octants: HashMap::new(),
+            // mapping_octants: HashMap::new(),
         }
     }
 
@@ -109,31 +105,19 @@ fn octree_create_child_octants(octant: &Octant, points: &[Point]) -> Vec<Octant>
 
     // initialize 8 child octants
     // 1. update center
-
-    // using rayon is slow here
-    // let mut octants: Vec<_> = (0..8usize)
-    //     .into_par_iter()
-    //     .map(|i| {
-    //         let mut o = Octant::new(extent);
-    //         let factors = get_octant_cell_factor(i);
-    //         // j = 0, 1, 2 => x, y, z
-    //         for j in (0..3) {
-    //             o.center[j] += extent * factors[j] + octant.center[j]
-    //         }
-    //         o
-    //     })
-    //     .collect();
-
-    let mut octants = vec![];
-    for i in (0..8) {
-        let mut o = Octant::new(extent);
-        let factors = get_octant_cell_factor(i);
-        // j = 0, 1, 2 => x, y, z
-        for j in (0..3) {
-            o.center[j] += extent * factors[j] + octant.center[j]
-        }
-        octants.push(o);
-    }
+    // Note: rayon's par_iter is slow
+    let mut child_octants: Vec<_> = (0..8usize)
+        .into_iter()
+        .map(|i| {
+            let mut o = Octant::new(extent);
+            let factors = get_octant_cell_factor(i);
+            // j = 0, 1, 2 => x, y, z
+            for j in (0..3) {
+                o.center[j] += extent * factors[j] + octant.center[j]
+            }
+            o
+        })
+        .collect();
 
     // 2. update point indices
     if octant.ipoints.len() > 1 {
@@ -143,17 +127,18 @@ fn octree_create_child_octants(octant: &Octant, points: &[Point]) -> Vec<Octant>
             let p = points[i];
             let (x, y, z) = (p[0] - x0, p[1] - y0, p[2] - z0);
             let index = get_octant_cell_index(x, y, z);
-            octants[index].ipoints.push(i);
+            child_octants[index].ipoints.push(i);
         }
     }
 
-    octants
+    child_octants
 }
 
 // zyx: +++ => 0
 // zyx: ++- => 1
 // zyx: --- => 7
 // morton encode
+#[inline]
 fn get_octant_cell_index(x: f64, y: f64, z: f64) -> usize {
     // create lookup table, which could be faster
     match (
@@ -193,6 +178,7 @@ fn test_octree_cell_index() {
 
 // useful for calculate center of child octant
 // morton decode
+#[inline]
 fn get_octant_cell_factor(index: usize) -> Point {
     debug_assert!(index < 8);
     [
@@ -237,7 +223,7 @@ impl Octree {
     /// - bucket_size: the max number of points each octant holds before
     /// stopping recursively dividing.
     pub fn build(&mut self, bucket_size: usize) {
-        debug_assert!(bucket_size > 0, "invalid bucket_size param!");
+        debug_assert!(bucket_size > 0, "invalid bucket_size: {}!", bucket_size);
 
         let root = self.root();
         let npoints = self.points.len();
@@ -271,11 +257,11 @@ impl Octree {
 
         // cache octants
         // create mapping of point => octant
-        for (i, ref octant) in self.octants.iter().enumerate() {
-            for &j in octant.ipoints.iter() {
-                self.mapping_octants.insert(j, i);
-            }
-        }
+        // for (i, ref octant) in self.octants.iter().enumerate() {
+        //     for &j in octant.ipoints.iter() {
+        //         self.mapping_octants.insert(j, i);
+        //     }
+        // }
     }
 }
 
@@ -417,14 +403,12 @@ impl Octree {
     /// Return
     /// ------
     /// indices of nearby points and distances
-    // FIXME: return an iterator?
-    pub fn search(&self, p: Point, radius: f64) -> Vec<(usize, f64)> {
+    pub fn search(&self, p: Point, radius: f64) -> impl Iterator<Item = (usize, f64)> + '_ {
         let mut query = Query::new(radius);
         query.center = p;
 
-        let mut pts_maybe: Vec<usize> = vec![];
-
         // step 1: record all nearby points by octree search
+        let mut pts_maybe: Vec<usize> = vec![];
         let mut nodes_to_visit = vec![self.root()];
         loop {
             let mut todo = vec![];
@@ -432,7 +416,7 @@ impl Octree {
                 let octant = &self[parent];
                 match query.relation(&octant) {
                     QORelation::Overlaps | QORelation::Within => {
-                        // println!("overlaps");
+                        // debug!("overlaps");
                         if octant.children.is_empty() {
                             // is a leaf node: save points
                             pts_maybe.extend(octant.ipoints.iter());
@@ -462,18 +446,15 @@ impl Octree {
         let (qx, qy, qz) = (query.center[0], query.center[1], query.center[2]);
         let radius = query.radius as f64;
         let rsqr = radius * radius;
-        pts_maybe
-            .into_iter()
-            .filter_map(|i| {
-                let (px, py, pz) = (self.points[i][0], self.points[i][1], self.points[i][2]);
-                let dsqr = (px - qx) * (px - qx) + (py - qy) * (py - qy) + (pz - qz) * (pz - qz);
-                if dsqr < rsqr {
-                    Some((i, dsqr.sqrt()))
-                } else {
-                    None
-                }
-            })
-            .collect()
+        pts_maybe.into_iter().filter_map(move |i| {
+            let (px, py, pz) = (self.points[i][0], self.points[i][1], self.points[i][2]);
+            let dsqr = (px - qx) * (px - qx) + (py - qy) * (py - qy) + (pz - qz) * (pz - qz);
+            if dsqr < rsqr {
+                Some((i, dsqr.sqrt()))
+            } else {
+                None
+            }
+        })
     }
 }
 
@@ -492,8 +473,7 @@ impl Octree {
         let mut pairs = vec![];
 
         for (i, &p) in self.points.iter().enumerate() {
-            let neighbors = self.search(p, radius);
-            for &(j, d) in neighbors.iter() {
+            for (j, d) in self.search(p, radius) {
                 if j != i {
                     pairs.push((i, j, d));
                 }

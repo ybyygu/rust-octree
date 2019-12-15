@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate timeit;
 
+use rayon::prelude::*;
+
 fn read_points(txt: &str) -> Vec<[f64; 3]> {
     let mut positions = Vec::new();
     for line in txt.lines() {
@@ -17,17 +19,17 @@ fn read_points(txt: &str) -> Vec<[f64; 3]> {
 fn main() {
     use octree::*;
 
-    // external xyz file
+    // external xyz file containing 51053 points
     let stream = include_str!("data/3wu2.xyz");
     let points = read_points(stream);
 
     let mut tree = Octree::new(points.clone());
-    let bucket_size = 8 * 8;
+    let bucket_size = 64;
     tree.build(bucket_size);
 
     timeit!({
-        for &q in tree.points.iter() {
-            tree.search(q, 5.0);
-        }
+        points.par_iter().for_each(|&q| {
+            let neighbors: Vec<_> = tree.search(q, 5.0).collect();
+        })
     });
 }
