@@ -457,29 +457,3 @@ impl Octree {
         })
     }
 }
-
-impl Octree {
-    /// Find all pair of points within a cutoff `radius`.
-    ///
-    /// Parameters
-    /// ----------
-    /// radius: the query ball radius
-    ///
-    /// Return
-    /// ------
-    /// indices of neighboring points in pairs
-    ///
-    pub fn neighbors(&self, radius: f64) -> Vec<(usize, usize, f64)> {
-        let mut pairs = vec![];
-
-        for (i, &p) in self.points.iter().enumerate() {
-            for (j, d) in self.search(p, radius) {
-                if j != i {
-                    pairs.push((i, j, d));
-                }
-            }
-        }
-
-        pairs
-    }
-}
