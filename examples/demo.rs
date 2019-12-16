@@ -3,9 +3,9 @@ extern crate timeit;
 
 use rayon::prelude::*;
 
-fn read_points(txt: &str) -> Vec<[f64; 3]> {
+fn read_points_xyz(txt: &str) -> Vec<[f64; 3]> {
     let mut positions = Vec::new();
-    for line in txt.lines() {
+    for line in txt.lines().skip(2) {
         let attrs: Vec<_> = line.split_whitespace().collect();
         let (_symbol, position) = attrs.split_first().expect("empty line");
         assert_eq!(position.len(), 3, "{:?}", position);
@@ -21,15 +21,16 @@ fn main() {
 
     // external xyz file containing 51053 points
     let stream = include_str!("data/3wu2.xyz");
-    let points = read_points(stream);
+    let points = read_points_xyz(stream);
 
-    let mut tree = Octree::new(points.clone());
-    let bucket_size = 64;
-    tree.build(bucket_size);
+    let x = timeit_loops!(10, {
+        let mut tree = Octree::new(points.clone());
+        let bucket_size = 64;
+        tree.build(bucket_size);
 
-    timeit!({
         points.par_iter().for_each(|&q| {
-            let neighbors: Vec<_> = tree.search(q, 5.0).collect();
+            let neighbors: Vec<_> = tree.search(q, 8.0).collect();
         })
     });
+    dbg!(x);
 }
