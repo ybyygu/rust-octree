@@ -23,6 +23,7 @@ fn main() {
     let stream = include_str!("data/3wu2.xyz");
     let points = read_points_xyz(stream);
 
+    let nloops = 10;
     let x = timeit_loops!(10, {
         let mut tree = Octree::new(points.clone());
         let bucket_size = 64;
@@ -32,5 +33,6 @@ fn main() {
             let neighbors: Vec<_> = tree.search(q, 8.0).collect();
         })
     });
-    dbg!(x);
+
+    println!("{} loops: {} ms", nloops, x * 1000.0);
 }
