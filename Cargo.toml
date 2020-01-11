@@ -10,7 +10,6 @@ authors = ["Wenping Guo <ybyygu@gmail.com>"]
 [dependencies]
 log = "^0.4"
 vecfx = { git = "https://github.com/gchemol/vecfx.git" }
-failure = "0.1"
 
 [dev-dependencies]
 rayon = "1"
