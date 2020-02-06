@@ -6,16 +6,21 @@ name = "octree"
 version = "0.0.6"
 edition = "2018"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
+description = "Octree algorithm for nearest neighbor search in 3D space"
+homepage = "https://github.com/ybyygu/rust-octree"
+repository = "https://github.com/ybyygu/rust-octree"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
-log = "^0.4"
-vecfx = { git = "https://github.com/gchemol/vecfx.git" }
+log = "0.4"
+vecfx = "0.0.8"
 
 [dev-dependencies]
 rayon = "1"
-criterion = "*"
-timeit = "*"
-approx = "*"
+criterion = "0.3"
+timeit = "0.1"
+approx = "0.3"
 
 [[bench]]
 name = "my_benchmark"

@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::ops::{Index, IndexMut};
 
 use log::*;
@@ -112,7 +111,7 @@ fn octree_create_child_octants(octant: &Octant, points: &[Point]) -> Vec<Octant>
             let mut o = Octant::new(extent);
             let factors = get_octant_cell_factor(i);
             // j = 0, 1, 2 => x, y, z
-            for j in (0..3) {
+            for j in 0..3 {
                 o.center[j] += extent * factors[j] + octant.center[j]
             }
             o
